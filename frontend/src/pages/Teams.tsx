@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { endpoints, type TeamOut, type PlayerOut } from "../api/client";
+import { endpoints, resolveUploadUrl, type TeamOut, type PlayerOut } from "../api/client";
 import { Modal } from "../components/Modal";
 import { ImageUpload } from "../components/ImageUpload";
 import { useAuth } from "../hooks/useAuth";
@@ -110,7 +110,7 @@ export function Teams() {
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     {t.logo_url ? (
-                      <img src={t.logo_url} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
+                      <img src={resolveUploadUrl(t.logo_url)} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
                     ) : (
                       <div
                         className="flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold"

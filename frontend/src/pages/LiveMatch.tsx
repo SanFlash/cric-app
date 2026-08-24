@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { endpoints, type PredictionOut, type MatchOut, type TeamOut } from "../api/client";
+import { endpoints, resolveUploadUrl, type PredictionOut, type MatchOut, type TeamOut } from "../api/client";
 import { useLiveMatch } from "../hooks/useLiveMatch";
 import { ScoreboardValue } from "../components/Scoreboard";
 import { WinProbabilityBar } from "../components/WinProbabilityBar";
@@ -103,7 +103,7 @@ export function LiveMatch() {
           >
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {teamA?.logo_url && <img src={teamA.logo_url} alt="" className="h-6 w-6 rounded object-cover" />}
+                {teamA?.logo_url && <img src={resolveUploadUrl(teamA.logo_url)} alt="" className="h-6 w-6 rounded object-cover" />}
                 <span
                   className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest"
                   style={{
@@ -113,7 +113,7 @@ export function LiveMatch() {
                 >
                   {payload.is_completed ? "Completed" : "● Live"}
                 </span>
-                {teamB?.logo_url && <img src={teamB.logo_url} alt="" className="h-6 w-6 rounded object-cover" />}
+                {teamB?.logo_url && <img src={resolveUploadUrl(teamB.logo_url)} alt="" className="h-6 w-6 rounded object-cover" />}
               </div>
               <span className="font-mono text-xs" style={{ color: "var(--color-cream-faint)", fontFamily: "var(--font-mono)" }}>
                 Innings {payload.innings_number}

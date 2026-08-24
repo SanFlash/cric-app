@@ -33,7 +33,11 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{_DEFAULT_SQLITE_PATH}"
 
     # --- CORS ---
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:5173", "http://127.0.0.1:5173",   # vite dev
+        "http://localhost:4173", "http://127.0.0.1:4173",   # vite preview (production build, local test)
+        "http://localhost:3000", "http://127.0.0.1:3000",
+    ]
 
     # --- Rate limiting ---
     RATE_LIMIT_PER_MINUTE: int = 120

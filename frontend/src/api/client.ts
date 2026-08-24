@@ -1,8 +1,24 @@
 import axios from "axios";
 
+// In local dev, VITE_API_URL is unset and every path stays relative — Vite's
+// dev-server proxy (vite.config.ts) forwards /api, /uploads, and /ws to the
+// backend, so the frontend and backend appear same-origin. In production,
+// where the frontend (Static Site) and backend (Web Service) are genuinely
+// different origins on Render, VITE_API_URL is set at build time to the
+// backend's real URL, and every relative path below gets that prefix instead.
+const API_ORIGIN = import.meta.env.VITE_API_URL ?? "";
+
 export const api = axios.create({
-  baseURL: "/api/v1",
+  baseURL: `${API_ORIGIN}/api/v1`,
 });
+
+/** Resolves an uploaded-image path (e.g. "/uploads/xxx.png") to a URL that
+ * works regardless of whether the frontend and backend share an origin. */
+export function resolveUploadUrl(path: string | null | undefined): string | undefined {
+  if (!path) return undefined;
+  if (path.startsWith("http")) return path; // already absolute
+  return `${API_ORIGIN}${path}`;
+}
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
@@ -256,6 +272,11 @@ export const endpoints = {
 };
 
 export function liveMatchSocket(matchId: number): WebSocket {
+  if (API_ORIGIN) {
+    const base = new URL(API_ORIGIN);
+    const proto = base.protocol === "https:" ? "wss" : "ws";
+    return new WebSocket(`${proto}://${base.host}/ws/matches/${matchId}`);
+  }
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
   return new WebSocket(`${proto}://${window.location.host}/ws/matches/${matchId}`);
 }

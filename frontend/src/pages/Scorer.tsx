@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { endpoints, type MatchOut, type InningsOut, type PlayerOut, type TeamOut } from "../api/client";
+import { endpoints, resolveUploadUrl, type MatchOut, type InningsOut, type PlayerOut, type TeamOut } from "../api/client";
 import { useLiveMatch } from "../hooks/useLiveMatch";
 import { ScoreboardValue } from "../components/Scoreboard";
 import { BallAnimation } from "../components/BallAnimation";
@@ -51,7 +51,7 @@ function Avatar({ player, size = 32 }: { player: PlayerOut | undefined; size?: n
   }
   return player.profile_image_url ? (
     <img
-      src={player.profile_image_url}
+      src={resolveUploadUrl(player.profile_image_url)}
       alt=""
       className="rounded-full object-cover"
       style={{ width: size, height: size, border: "1px solid var(--color-pitch-line)" }}
@@ -237,7 +237,7 @@ export function Scorer() {
       </Link>
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex items-center gap-3">
         {teamA?.logo_url ? (
-          <img src={teamA.logo_url} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
+          <img src={resolveUploadUrl(teamA.logo_url)} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
         ) : (
           <div className="flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold" style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)" }}>
             {teamA?.name.slice(0, 2).toUpperCase()}
@@ -256,7 +256,7 @@ export function Scorer() {
           </p>
         </div>
         {teamB?.logo_url ? (
-          <img src={teamB.logo_url} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
+          <img src={resolveUploadUrl(teamB.logo_url)} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
         ) : (
           <div className="flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold" style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)" }}>
             {teamB?.name.slice(0, 2).toUpperCase()}

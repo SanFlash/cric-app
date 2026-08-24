@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { endpoints, type TeamOut, type PlayerOut } from "../api/client";
+import { endpoints, resolveUploadUrl, type TeamOut, type PlayerOut } from "../api/client";
 import { Modal } from "../components/Modal";
 import { ImageUpload } from "../components/ImageUpload";
 import { useAuth } from "../hooks/useAuth";
@@ -114,7 +114,7 @@ export function TeamDetail() {
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
           {team.logo_url ? (
-            <img src={team.logo_url} alt="" className="h-14 w-14 rounded-lg object-cover sm:h-16 sm:w-16" style={{ border: "1px solid var(--color-pitch-line)" }} />
+            <img src={resolveUploadUrl(team.logo_url)} alt="" className="h-14 w-14 rounded-lg object-cover sm:h-16 sm:w-16" style={{ border: "1px solid var(--color-pitch-line)" }} />
           ) : (
             <div
               className="flex h-14 w-14 items-center justify-center rounded-lg text-lg font-bold sm:h-16 sm:w-16"
@@ -182,7 +182,7 @@ export function TeamDetail() {
           >
             <div className="col-span-4 flex items-center gap-2 font-medium" style={{ color: "var(--color-cream)" }}>
               {p.profile_image_url ? (
-                <img src={p.profile_image_url} alt="" className="h-6 w-6 rounded-full object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
+                <img src={resolveUploadUrl(p.profile_image_url)} alt="" className="h-6 w-6 rounded-full object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
               ) : (
                 <span
                   className="flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold"

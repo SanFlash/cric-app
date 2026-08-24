@@ -722,6 +722,96 @@ motion on every connected client, scorer and viewers alike.
 
 ## Added: squad-scoped scoring, a Predictions page, and distinct extras animations
 
+## Deploying to Render (from GitHub)
+
+`render.yaml` at the repo root defines everything as one Blueprint: the
+backend (native Python runtime, no Docker), the frontend (static site),
+and a free Postgres database. Two things had to be fixed before this
+could work at all, worth knowing about:
+
+1. **The frontend hardcoded same-origin API calls.** `client.ts`'s base
+   URL and the WebSocket connection both assumed the frontend and backend
+   shared a domain — true in local dev only because Vite's proxy hides
+   it. On Render, the static site and the API are genuinely different
+   domains. Fixed: an optional `VITE_API_URL` build-time env var now
+   drives the API base URL, the WebSocket origin, and every uploaded
+   image URL (`resolveUploadUrl()` in `client.ts`) — empty by default, so
+   local dev is unaffected. **Verified for real**: built the frontend
+   with `VITE_API_URL` pointing at a backend on a different port, served
+   it from yet another port, logged in, and confirmed via network
+   inspection that all 19 API requests genuinely crossed origins
+   correctly — not assumed from reading the code.
+2. **Client-side routing needs a rewrite rule.** Directly loading
+   `/login` or `/teams/5` on a plain static file server 404s, because the
+   server looks for a literal file at that path instead of serving
+   `index.html` and letting React Router take over. `render.yaml`'s
+   frontend service includes the required rewrite rule
+   (`/* → /index.html`) — confirmed this exact failure mode by
+   reproducing it locally first (a raw `python -m http.server` 404s on
+   `/login`; the app works once you land on `/` and navigate client-side).
+
+### Steps
+
+1. **Push this repo to GitHub** (if not already there).
+2. **Render Dashboard → New → Blueprint.** Connect your GitHub account,
+   pick the repo. Render reads `render.yaml` automatically and shows you
+   three resources: `corpcric-api`, `corpcric-web`, `corpcric-db`.
+3. **Click "Apply"** to create all three. First deploy takes a few
+   minutes — the backend installs Python deps and the frontend runs
+   `npm install && npm run build`.
+4. Once both are live, **note their actual URLs** from the Render
+   dashboard (e.g. `https://corpcric-api-xxxx.onrender.com` and
+   `https://corpcric-web-xxxx.onrender.com` — Render appends a random
+   suffix if the plain name is taken).
+5. **Backend → Environment tab** → add a new variable:
+   `CORS_ORIGINS` = `["https://corpcric-web-xxxx.onrender.com"]`
+   (the frontend's real URL, as a JSON array string — this is exactly
+   how `Settings.CORS_ORIGINS` parses env vars; confirmed locally before
+   writing this).
+6. **Frontend → Environment tab** → add:
+   `VITE_API_URL` = `https://corpcric-api-xxxx.onrender.com`
+   (the backend's real URL, **no trailing slash**). Since this is baked
+   into the JS bundle at build time, also click **"Manual Deploy" →
+   "Clear build cache & deploy"** on the frontend service afterward — a
+   plain restart won't pick up the new value, only a rebuild will.
+7. **Seed the database.** Render's free Postgres has no shell access from
+   your machine directly, but you can run the seed script from Render's
+   own shell: Backend service → **Shell** tab →
+   ```bash
+   python /opt/render/project/src/seed_demo.py
+   ```
+   (adjust the path if Render's checkout root differs — check with `pwd`
+   and `ls` in that shell first; `seed_demo.py` lives at the repo root,
+   one level up from `backend/`).
+8. Visit your frontend URL, log in with the seeded admin credentials
+   (printed by the seed script), and confirm the Dashboard loads with
+   real data. If it shows "Couldn't reach the API," the `VITE_API_URL`
+   rebuild in step 6 either didn't happen or used the wrong URL.
+
+### Two real limitations, not fixed, worth knowing before you rely on this
+
+- **Uploaded images won't survive a redeploy.** `backend/uploads/` is
+  local disk — Render's free tier has no persistent disk, and even paid
+  disks reset on some deploy types. Every push that redeploys the backend
+  wipes previously uploaded team logos and player photos. For anything
+  beyond a demo, this needs real object storage (S3, Cloudflare R2,
+  Render's own disk add-on) — not implemented here; `main.py` has a
+  comment flagging exactly this since Phase 9.
+- **Render's free web services spin down after 15 minutes of
+  inactivity** and take ~30-60 seconds to wake back up on the next
+  request. Expect a slow first load after any idle period — this is a
+  Render free-tier behavior, not a bug in the app.
+
+### If you'd rather use Docker after all
+
+The original Docker-based setup (`backend/Dockerfile`, `.dockerignore`)
+is still in the repo and still works — swap `env: python` +
+`buildCommand`/`startCommand` back to `env: docker` +
+`dockerfilePath: ./backend/Dockerfile` + `dockerContext: ./backend` in
+`render.yaml` if you prefer that path. Both were verified working in
+this project; native Python is simpler to reason about and was requested
+specifically, so it's the default in the committed `render.yaml`.
+
 ## Mobile responsiveness — audited at a real phone viewport, not just resized
 
 Turned out Tournament creation, Quick Match, and a full mobile

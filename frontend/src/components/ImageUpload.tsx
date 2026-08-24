@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { endpoints } from "../api/client";
+import { endpoints, resolveUploadUrl } from "../api/client";
 
 export function ImageUpload({
   currentUrl,
@@ -23,7 +23,7 @@ export function ImageUpload({
     setUploading(true);
     try {
       const res = await endpoints.uploadImage(file);
-      setPreview(res.data.url);
+      setPreview(resolveUploadUrl(res.data.url) ?? res.data.url);
       onUploaded(res.data.url);
     } catch (e: unknown) {
       const message =
