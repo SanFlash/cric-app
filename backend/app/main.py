@@ -35,7 +35,7 @@ def on_startup():
     Base.metadata.create_all(bind=engine)
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
-<<<<<<< HEAD
+#<<<<<<< HEAD
     # Login-ready with zero manual seeding: creates the default admin/umpire
     # accounts (and a company for them to belong to) on first startup only —
     # idempotent, so this is safe to run on every restart/redeploy without
