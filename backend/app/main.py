@@ -4,12 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-<<<<<<< HEAD
+
 from app.core.database import Base, engine, SessionLocal
 from app.core.bootstrap import ensure_default_accounts
-=======
+
 from app.core.database import Base, engine
->>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
+#>>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 import app.models  # noqa: F401 — registers all tables on Base.metadata
 
 from app.api.routes import (
@@ -46,8 +46,8 @@ def on_startup():
     finally:
         db.close()
 
-=======
->>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
+#=======
+#>>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 
 @app.get("/health")
 def health():
