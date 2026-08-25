@@ -18,18 +18,46 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1        # you should see (venv) in your prompt
 pip install -r requirements.txt
 
+<<<<<<< HEAD
 # 2. Start the backend — no seeding step. The app creates its own default
 #    login accounts automatically the first time it starts.
+=======
+# 2. Seed the database — you are now in the REPO ROOT, not backend\
+cd ..
+Remove-Item -Force .\backend\corpcric.db -ErrorAction SilentlyContinue   # ← never skip this line, even on a "quick" reseed
+python seed_demo.py
+# → should print "Seed complete." with two logins: admin@acme.com / admin12345
+#   (Company Admin) and umpire@acme.com / umpire12345 (Umpire, for scoring)
+# → If this errors with "UNIQUE constraint failed", you skipped the Remove-Item line above.
+
+# 3. Start the backend — you MUST cd back into backend\ first, or uvicorn
+#    can't find the `app` package and fails with ModuleNotFoundError: No module named 'app'
+cd backend
+>>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 python -m uvicorn app.main:app --reload
 # → check http://127.0.0.1:8000/health shows {"status":"ok",...}
 ```
 
+<<<<<<< HEAD
+=======
+**Steps 2 and 3 switch directories — that's the single most common way this
+whole sequence breaks.** After `cd ..` for step 2, you are in the repo
+root; step 3 opens with `cd backend` specifically to undo that before
+starting the server. Skipping either the `Remove-Item` in step 2 or the
+`cd backend` in step 3 produces the two most common errors people hit:
+`UNIQUE constraint failed: companies.name` (stale database, didn't
+delete it) and `ModuleNotFoundError: No module named 'app'` (ran uvicorn
+from the wrong directory). Both are directory/state mistakes, not bugs —
+rerun the exact three steps above from a fresh terminal and both go away.
+
+>>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 Then, in a **second terminal**:
 ```powershell
 cd path\to\corpcric\frontend
 npm install
 npm run dev
 # → open http://127.0.0.1:5173, log in with admin@acme.com / admin12345
+<<<<<<< HEAD
 #   (or umpire@acme.com / umpire12345 for the scorer-only account)
 ```
 
@@ -41,12 +69,17 @@ engines with. Skipping it entirely, like the sequence above does, gives
 you a clean organization with just the two login accounts — the normal
 way to actually start using this for real data.
 
+=======
+```
+
+>>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 **The most common way this goes wrong**: creating a *second* venv
 somewhere else and activating that one instead — it won't have
 dependencies installed, so you'll get `ModuleNotFoundError`. Use exactly
 one venv, at `backend\venv`, always. If you're ever unsure, delete
 `backend\venv` entirely and redo step 1 from scratch — that's always safe.
 
+<<<<<<< HEAD
 ## Login-ready with zero seeding
 
 The backend's startup hook (`app/main.py` → `ensure_default_accounts()` in
@@ -90,6 +123,8 @@ only take effect for the accounts that don't exist yet, so changing them
 after the defaults have already been created won't retroactively rename
 anything.
 
+=======
+>>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 On the frontend, **"Not logged in" in the sidebar is expected**, not an
 error — click "Log in". A red **"Couldn't reach the API"** banner means
 the backend isn't running or isn't reachable — check `/health` first.
@@ -807,22 +842,37 @@ could work at all, worth knowing about:
    into the JS bundle at build time, also click **"Manual Deploy" →
    "Clear build cache & deploy"** on the frontend service afterward — a
    plain restart won't pick up the new value, only a rebuild will.
+<<<<<<< HEAD
 7. **No seeding step needed.** The backend creates its own login-ready
    default accounts (`admin@acme.com` / `admin12345` and
    `umpire@acme.com` / `umpire12345`) automatically on first startup —
    see "Login-ready with zero seeding" earlier in this doc. If you *want*
    pre-populated demo teams/players/matches to explore with, that's still
    optional via Render's **Shell** tab on the backend service:
+=======
+7. **Seed the database.** Render's free Postgres has no shell access from
+   your machine directly, but you can run the seed script from Render's
+   own shell: Backend service → **Shell** tab →
+>>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
    ```bash
    python /opt/render/project/src/seed_demo.py
    ```
    (adjust the path if Render's checkout root differs — check with `pwd`
+<<<<<<< HEAD
    and `ls` in that shell first).
 8. Visit your frontend URL and log in with the admin credentials above.
    Confirm the Dashboard loads (it'll show an empty state — "No teams
    yet" — until you add real ones, which is correct). If it shows
    "Couldn't reach the API" instead, the `VITE_API_URL` rebuild in step 6
    either didn't happen or used the wrong URL.
+=======
+   and `ls` in that shell first; `seed_demo.py` lives at the repo root,
+   one level up from `backend/`).
+8. Visit your frontend URL, log in with the seeded admin credentials
+   (printed by the seed script), and confirm the Dashboard loads with
+   real data. If it shows "Couldn't reach the API," the `VITE_API_URL`
+   rebuild in step 6 either didn't happen or used the wrong URL.
+>>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 
 ### Two real limitations, not fixed, worth knowing before you rely on this
 
