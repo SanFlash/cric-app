@@ -2,7 +2,7 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.6
 sqlalchemy==2.0.52
 <<<<<<< HEAD
-pydantic==2.9.2
+pydantic
 =======
 pydantic
 >>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
@@ -14,7 +14,7 @@ python-multipart==0.0.9
 websockets==13.1
 alembic==1.13.2
 <<<<<<< HEAD
-psycopg2-binary==2.9.9
+psycopg2-binary
 =======
 psycopg2-binary
 >>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
