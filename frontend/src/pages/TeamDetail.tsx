@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { endpoints, resolveUploadUrl, type TeamOut, type PlayerOut } from "../api/client";
+import { endpoints, type TeamOut, type PlayerOut } from "../api/client";
 import { Modal } from "../components/Modal";
 import { ImageUpload } from "../components/ImageUpload";
+import { UploadedImage } from "../components/UploadedImage";
 import { useAuth } from "../hooks/useAuth";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -113,16 +114,7 @@ export function TeamDetail() {
       </Link>
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-4">
-          {team.logo_url ? (
-            <img src={resolveUploadUrl(team.logo_url)} alt="" className="h-14 w-14 rounded-lg object-cover sm:h-16 sm:w-16" style={{ border: "1px solid var(--color-pitch-line)" }} />
-          ) : (
-            <div
-              className="flex h-14 w-14 items-center justify-center rounded-lg text-lg font-bold sm:h-16 sm:w-16"
-              style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)" }}
-            >
-              {team.name.slice(0, 2).toUpperCase()}
-            </div>
-          )}
+          <UploadedImage src={team.logo_url} name={team.name} size={56} shape="square" />
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl" style={{ fontFamily: "var(--font-display)", color: "var(--color-cream)" }}>
               {team.name}
@@ -181,16 +173,7 @@ export function TeamDetail() {
             style={{ borderColor: "var(--color-pitch-line)" }}
           >
             <div className="col-span-4 flex items-center gap-2 font-medium" style={{ color: "var(--color-cream)" }}>
-              {p.profile_image_url ? (
-                <img src={resolveUploadUrl(p.profile_image_url)} alt="" className="h-6 w-6 rounded-full object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
-              ) : (
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-[9px] font-bold"
-                  style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)" }}
-                >
-                  {p.full_name.slice(0, 1).toUpperCase()}
-                </span>
-              )}
+              <UploadedImage src={p.profile_image_url} name={p.full_name} size={24} shape="circle" />
               <Link to={`/players/${p.id}`} className="hover:underline">
                 {p.full_name}
               </Link>

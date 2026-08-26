@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { endpoints, resolveUploadUrl, type MatchOut, type InningsOut, type PlayerOut, type TeamOut } from "../api/client";
+import { endpoints, type MatchOut, type InningsOut, type PlayerOut, type TeamOut } from "../api/client";
 import { useLiveMatch } from "../hooks/useLiveMatch";
 import { ScoreboardValue } from "../components/Scoreboard";
 import { BallAnimation } from "../components/BallAnimation";
 import { NowPlaying } from "../components/NowPlaying";
+import { UploadedImage } from "../components/UploadedImage";
+import { ChaseBanner } from "../components/ChaseBanner";
+import { computeChaseSummary } from "../utils/chase";
 
 const RUN_BUTTONS = [
   { label: "0", outcome: "dot" },
@@ -49,33 +52,23 @@ function Avatar({ player, size = 32 }: { player: PlayerOut | undefined; size?: n
   if (!player) {
     return <div className="rounded-full" style={{ width: size, height: size, backgroundColor: "var(--color-pitch-700)" }} />;
   }
-  return player.profile_image_url ? (
-    <img
-      src={resolveUploadUrl(player.profile_image_url)}
-      alt=""
-      className="rounded-full object-cover"
-      style={{ width: size, height: size, border: "1px solid var(--color-pitch-line)" }}
-    />
-  ) : (
-    <div
-      className="flex items-center justify-center rounded-full font-bold"
-      style={{ width: size, height: size, backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)", fontSize: size * 0.4 }}
-    >
-      {player.full_name.slice(0, 1).toUpperCase()}
-    </div>
-  );
+  return <UploadedImage src={player.profile_image_url} name={player.full_name} size={size} shape="circle" />;
 }
 
 function PlayerPicker({
-  label, players, value, onChange, exclude,
+  label, players, value, onChange, exclude, excludeIds, action,
 }: {
-  label: string; players: PlayerOut[]; value: number | ""; onChange: (id: number | "") => void; exclude?: number | "";
+  label: string; players: PlayerOut[]; value: number | ""; onChange: (id: number | "") => void;
+  exclude?: number | ""; excludeIds?: Set<number>; action?: React.ReactNode;
 }) {
   const selected = players.find((p) => p.id === value);
-  const options = exclude ? players.filter((p) => p.id !== exclude) : players;
+  const options = players.filter((p) => p.id !== exclude && !excludeIds?.has(p.id));
   return (
     <div>
-      <label className="mb-1 block text-xs" style={{ color: "var(--color-cream-faint)" }}>{label}</label>
+      <div className="mb-1 flex items-center justify-between">
+        <label className="block text-xs" style={{ color: "var(--color-cream-faint)" }}>{label}</label>
+        {action}
+      </div>
       <div className="flex items-center gap-2">
         <Avatar player={selected} />
         <select
@@ -106,6 +99,11 @@ export function Scorer() {
   const [bowlerId, setBowlerId] = useState<number | "">("");
   const [previousBowlerId, setPreviousBowlerId] = useState<number | "">("");
   const [needNewBowler, setNeedNewBowler] = useState(false);
+  // Which slot needs a replacement batter, and everyone no longer able to
+  // bat this innings (dismissed, or retired hurt) so they can't be picked
+  // again by mistake.
+  const [needNewBatsman, setNeedNewBatsman] = useState<"striker" | "non_striker" | null>(null);
+  const [unavailableBatterIds, setUnavailableBatterIds] = useState<Set<number>>(new Set());
 
   const [showWicket, setShowWicket] = useState(false);
   const [dismissalType, setDismissalType] = useState("bowled");
@@ -157,6 +155,38 @@ export function Scorer() {
       setNeedNewBowler(true);
     }
   }, [payload?.event?.delivery_id]);
+
+  // Same pattern for a genuine wicket: read from the broadcast (not local
+  // state alone) so this is correct even if a second device/browser
+  // recorded the delivery. Clears whichever slot — striker or
+  // non-striker — the dismissed player was actually occupying, and blocks
+  // scoring until a replacement is picked. The dismissed player is also
+  // permanently excluded from both pickers for the rest of this innings.
+  useEffect(() => {
+    const dismissed = payload?.event?.is_wicket && !payload.is_completed ? payload.event.dismissed_player : null;
+    if (!dismissed) return;
+    setUnavailableBatterIds((prev) => new Set(prev).add(dismissed.id));
+    setStrikerId((current) => {
+      if (current === dismissed.id) {
+        setNeedNewBatsman("striker");
+        return "";
+      }
+      return current;
+    });
+    setNonStrikerId((current) => {
+      if (current === dismissed.id) {
+        setNeedNewBatsman("non_striker");
+        return "";
+      }
+      return current;
+    });
+  }, [payload?.event?.delivery_id]);
+
+  // A new innings starts with a clean slate — nobody's out yet.
+  useEffect(() => {
+    setUnavailableBatterIds(new Set());
+    setNeedNewBatsman(null);
+  }, [payload?.innings_id]);
 
   const currentInnings = innings.find((i) => !i.is_completed && i.total_balls > 0) ?? innings.find((i) => !i.is_completed) ?? innings[innings.length - 1];
 
@@ -222,13 +252,33 @@ export function Scorer() {
     setNeedNewBowler(false);
   }
 
+  function confirmNewBatsman() {
+    if (needNewBatsman === "striker" && strikerId !== "") setNeedNewBatsman(null);
+    if (needNewBatsman === "non_striker" && nonStrikerId !== "") setNeedNewBatsman(null);
+  }
+
+  // "Retired hurt" (or any other reason a batter leaves mid-innings without
+  // being dismissed) — a purely local substitution, not a delivery. Doesn't
+  // touch the bowler's figures or fielding stats, since nothing was
+  // actually bowled. Marks the retiring player unavailable for the rest of
+  // this innings and prompts for their replacement, same as a real wicket.
+  function retireBatter(slot: "striker" | "non_striker") {
+    const id = slot === "striker" ? strikerId : nonStrikerId;
+    if (id === "") return;
+    setUnavailableBatterIds((prev) => new Set(prev).add(Number(id)));
+    if (slot === "striker") setStrikerId("");
+    else setNonStrikerId("");
+    setNeedNewBatsman(slot);
+  }
+
   if (!match) return <div style={{ color: "var(--color-cream-faint)" }}>Loading…</div>;
 
   const teamA = teams[match.team_a_id];
+  const chaseSummary = payload ? computeChaseSummary(payload.score, payload.overs, payload.target, match.overs_limit) : null;
   const teamB = teams[match.team_b_id];
   const battingTeam = currentInnings ? teams[currentInnings.batting_team_id] : undefined;
   const bowlingTeam = currentInnings ? teams[currentInnings.bowling_team_id] : undefined;
-  const blocked = needNewBowler;
+  const blocked = needNewBowler || needNewBatsman !== null;
 
   return (
     <div>
@@ -236,13 +286,7 @@ export function Scorer() {
         ← All matches
       </Link>
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex items-center gap-3">
-        {teamA?.logo_url ? (
-          <img src={resolveUploadUrl(teamA.logo_url)} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold" style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)" }}>
-            {teamA?.name.slice(0, 2).toUpperCase()}
-          </div>
-        )}
+        {teamA && <UploadedImage src={teamA.logo_url} name={teamA.name} size={40} shape="square" />}
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-cream)" }}>
             {teamA?.name ?? "Team A"} vs {teamB?.name ?? "Team B"}
@@ -255,13 +299,7 @@ export function Scorer() {
             {" "}on any device.
           </p>
         </div>
-        {teamB?.logo_url ? (
-          <img src={resolveUploadUrl(teamB.logo_url)} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold" style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)" }}>
-            {teamB?.name.slice(0, 2).toUpperCase()}
-          </div>
-        )}
+        {teamB && <UploadedImage src={teamB.logo_url} name={teamB.name} size={40} shape="square" />}
       </motion.div>
 
       {payload?.event && <BallAnimation key={payload.event.delivery_id} event={payload.event} />}
@@ -273,8 +311,10 @@ export function Scorer() {
       />
 
       {payload && (
-        <div className="mb-6 rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.6)" }}>
-          <ScoreboardValue value={payload.score} size="text-5xl" />
+        <>
+          {match && chaseSummary && <ChaseBanner chase={chaseSummary} />}
+          <div className="mb-6 rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.6)" }}>
+            <ScoreboardValue value={payload.score} size="text-5xl" />
           <div className="mt-2 flex gap-4 font-mono text-sm" style={{ color: "var(--color-cream-dim)", fontFamily: "var(--font-mono)" }}>
             <span>Overs {payload.overs}</span>
             <span>RR {payload.run_rate.toFixed(2)}</span>
@@ -299,7 +339,8 @@ export function Scorer() {
               </span>
             ))}
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       <div className="mb-1 flex gap-3 text-[10px]" style={{ color: "var(--color-cream-faint)" }}>
@@ -307,8 +348,24 @@ export function Scorer() {
         {squadScoped.bowling && <span>⬤ Bowler limited to squad</span>}
       </div>
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <PlayerPicker label="Striker" players={battingRoster} value={strikerId} onChange={setStrikerId} />
-        <PlayerPicker label="Non-striker" players={battingRoster} value={nonStrikerId} onChange={setNonStrikerId} />
+        <PlayerPicker
+          label="Striker" players={battingRoster} value={strikerId} onChange={setStrikerId}
+          excludeIds={unavailableBatterIds} exclude={nonStrikerId || undefined}
+          action={strikerId !== "" && needNewBatsman === null && (
+            <button onClick={() => retireBatter("striker")} className="text-[10px] underline" style={{ color: "var(--color-cream-faint)" }}>
+              Retired hurt / sub
+            </button>
+          )}
+        />
+        <PlayerPicker
+          label="Non-striker" players={battingRoster} value={nonStrikerId} onChange={setNonStrikerId}
+          excludeIds={unavailableBatterIds} exclude={strikerId || undefined}
+          action={nonStrikerId !== "" && needNewBatsman === null && (
+            <button onClick={() => retireBatter("non_striker")} className="text-[10px] underline" style={{ color: "var(--color-cream-faint)" }}>
+              Retired hurt / sub
+            </button>
+          )}
+        />
         <PlayerPicker label="Bowler" players={bowlingRoster} value={bowlerId} onChange={setBowlerId} exclude={needNewBowler ? previousBowlerId : undefined} />
       </div>
 
@@ -319,11 +376,23 @@ export function Scorer() {
           className="mb-4 rounded-lg border px-4 py-3 text-sm"
           style={{ borderColor: "var(--color-amber-dim)", backgroundColor: "rgba(242,169,59,0.08)", color: "var(--color-cream)" }}
         >
-          Over complete — pick the next bowler above (can't be the same one who just bowled), then
-          {" "}
-          <button onClick={confirmNewBowler} disabled={bowlerId === ""} className="underline disabled:opacity-40" style={{ color: "var(--color-amber)" }}>
-            confirm to continue scoring
-          </button>.
+          {needNewBatsman !== null ? (
+            <>
+              Pick the new {needNewBatsman === "striker" ? "striker" : "non-striker"} above, then
+              {" "}
+              <button onClick={confirmNewBatsman} disabled={needNewBatsman === "striker" ? strikerId === "" : nonStrikerId === ""} className="underline disabled:opacity-40" style={{ color: "var(--color-amber)" }}>
+                confirm to continue scoring
+              </button>.
+            </>
+          ) : (
+            <>
+              Over complete — pick the next bowler above (can't be the same one who just bowled), then
+              {" "}
+              <button onClick={confirmNewBowler} disabled={bowlerId === ""} className="underline disabled:opacity-40" style={{ color: "var(--color-amber)" }}>
+                confirm to continue scoring
+              </button>.
+            </>
+          )}
         </div>
       )}
 

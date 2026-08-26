@@ -3,7 +3,6 @@ __pycache__/
 *.db
 .env
 venv/
-<<<<<<< HEAD
 uploads/
 frontend/node_modules/
 frontend/dist/
@@ -11,8 +10,3 @@ frontend/dist/
 *.log
 .vscode/
 .idea/
-=======
-frontend/node_modules/
-frontend/dist/
-.DS_Store
->>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0

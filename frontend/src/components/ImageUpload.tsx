@@ -45,7 +45,7 @@ export function ImageUpload({
         style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-700)", borderRadius: radius }}
       >
         {preview ? (
-          <img src={preview} alt="" className="h-full w-full object-cover" />
+          <img src={preview} alt="" className="h-full w-full object-cover" onError={() => setPreview(null)} />
         ) : (
           <span style={{ color: "var(--color-cream-faint)", fontSize: 24 }}>+</span>
         )}

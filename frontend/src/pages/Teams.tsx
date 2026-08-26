@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { endpoints, resolveUploadUrl, type TeamOut, type PlayerOut } from "../api/client";
+import { endpoints, type TeamOut, type PlayerOut } from "../api/client";
 import { Modal } from "../components/Modal";
 import { ImageUpload } from "../components/ImageUpload";
+import { UploadedImage } from "../components/UploadedImage";
 import { useAuth } from "../hooks/useAuth";
 
 interface TeamWithRoster extends TeamOut {
@@ -109,16 +110,7 @@ export function Teams() {
               >
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    {t.logo_url ? (
-                      <img src={resolveUploadUrl(t.logo_url)} alt="" className="h-10 w-10 rounded-md object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
-                    ) : (
-                      <div
-                        className="flex h-10 w-10 items-center justify-center rounded-md text-xs font-bold"
-                        style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)" }}
-                      >
-                        {t.name.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
+                    <UploadedImage src={t.logo_url} name={t.name} size={40} shape="square" />
                     <div>
                       <div className="text-lg font-semibold" style={{ color: "var(--color-cream)", fontFamily: "var(--font-display)" }}>
                         {t.name}

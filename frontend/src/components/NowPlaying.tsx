@@ -1,20 +1,11 @@
 import type { PlayerBrief } from "../hooks/useLiveMatch";
-import { resolveUploadUrl } from "../api/client";
+import { UploadedImage } from "./UploadedImage";
 
 function MiniAvatar({ player }: { player: PlayerBrief | null | undefined }) {
   if (!player) {
     return <div className="h-8 w-8 rounded-full" style={{ backgroundColor: "var(--color-pitch-700)" }} />;
   }
-  return player.profile_image_url ? (
-    <img src={resolveUploadUrl(player.profile_image_url)} alt="" className="h-8 w-8 rounded-full object-cover" style={{ border: "1px solid var(--color-pitch-line)" }} />
-  ) : (
-    <div
-      className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
-      style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream-faint)" }}
-    >
-      {player.full_name.slice(0, 1).toUpperCase()}
-    </div>
-  );
+  return <UploadedImage src={player.profile_image_url} name={player.full_name} size={32} shape="circle" />;
 }
 
 export function NowPlaying({

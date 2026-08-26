@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { endpoints, resolveUploadUrl, type PredictionOut, type MatchOut, type TeamOut } from "../api/client";
+import { endpoints, type PredictionOut, type MatchOut, type TeamOut } from "../api/client";
 import { useLiveMatch } from "../hooks/useLiveMatch";
 import { ScoreboardValue } from "../components/Scoreboard";
 import { WinProbabilityBar } from "../components/WinProbabilityBar";
 import { MomentumChart } from "../components/MomentumChart";
 import { BallAnimation } from "../components/BallAnimation";
 import { NowPlaying } from "../components/NowPlaying";
+import { UploadedImage } from "../components/UploadedImage";
+import { ChaseBanner } from "../components/ChaseBanner";
+import { computeChaseSummary } from "../utils/chase";
 
 export function LiveMatch() {
   const { matchId: matchIdParam } = useParams();
@@ -19,6 +22,7 @@ export function LiveMatch() {
   const [match, setMatch] = useState<MatchOut | null>(null);
   const [teamA, setTeamA] = useState<TeamOut | null>(null);
   const [teamB, setTeamB] = useState<TeamOut | null>(null);
+  const chaseSummary = payload && match ? computeChaseSummary(payload.score, payload.overs, payload.target, match.overs_limit) : null;
 
   useEffect(() => {
     if (matchId == null) return;
@@ -103,7 +107,7 @@ export function LiveMatch() {
           >
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {teamA?.logo_url && <img src={resolveUploadUrl(teamA.logo_url)} alt="" className="h-6 w-6 rounded object-cover" />}
+                {teamA && <UploadedImage src={teamA.logo_url} name={teamA.name} size={24} shape="square" />}
                 <span
                   className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest"
                   style={{
@@ -113,7 +117,7 @@ export function LiveMatch() {
                 >
                   {payload.is_completed ? "Completed" : "● Live"}
                 </span>
-                {teamB?.logo_url && <img src={resolveUploadUrl(teamB.logo_url)} alt="" className="h-6 w-6 rounded object-cover" />}
+                {teamB && <UploadedImage src={teamB.logo_url} name={teamB.name} size={24} shape="square" />}
               </div>
               <span className="font-mono text-xs" style={{ color: "var(--color-cream-faint)", fontFamily: "var(--font-mono)" }}>
                 Innings {payload.innings_number}
@@ -127,6 +131,8 @@ export function LiveMatch() {
               nonStriker={payload.event?.non_striker ?? payload.current_players?.non_striker}
               bowler={payload.event?.bowler ?? payload.current_players?.bowler}
             />
+
+            {match && chaseSummary && <ChaseBanner chase={chaseSummary} />}
 
             <div className="mb-2">
               <ScoreboardValue value={payload.score} size="text-7xl" />

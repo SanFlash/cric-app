@@ -3,7 +3,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "bac
 
 from app.core.database import Base, engine, SessionLocal
 import app.models
-<<<<<<< HEAD
 from app.core.bootstrap import ensure_default_accounts
 from app.core.config import settings
 from app.models.org import Company, Team, Player
@@ -12,21 +11,11 @@ from app.models.tournament import Tournament
 from app.models.enums import PlayingRole, DeliveryOutcome, DismissalType, MatchStatus, TournamentFormat, TossDecision
 from app.services.scoring_service import ScoringService, BallInput
 from app.services.prediction_engine import PredictionEngine
-=======
-from app.models.org import Company, Team, Player, User
-from app.models.match import Match, Innings
-from app.models.tournament import Tournament
-from app.models.enums import PlayingRole, DeliveryOutcome, DismissalType, MatchStatus, TournamentFormat, TossDecision, UserRole
-from app.services.scoring_service import ScoringService, BallInput
-from app.services.prediction_engine import PredictionEngine
-from app.core.security import hash_password
->>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 from datetime import datetime, timezone
 
 Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 
-<<<<<<< HEAD
 # The app itself creates these two accounts automatically on first startup
 # now (see app/core/bootstrap.py) — this just reuses the exact same
 # function so this script never creates a second, disconnected company or
@@ -37,29 +26,6 @@ admin_user, umpire_user = ensure_default_accounts(db)
 co = db.get(Company, admin_user.company_id)
 ADMIN_EMAIL, ADMIN_PASSWORD = settings.DEFAULT_ADMIN_EMAIL, settings.DEFAULT_ADMIN_PASSWORD
 UMPIRE_EMAIL, UMPIRE_PASSWORD = settings.DEFAULT_UMPIRE_EMAIL, settings.DEFAULT_UMPIRE_PASSWORD
-=======
-co = Company(name="Acme Corp"); db.add(co); db.flush()
-
-# A real login-capable admin account — without this, there is literally
-# nothing to log into, which is why "add player"/"invite captain" failed
-# with "not authenticated": no account existed at all.
-ADMIN_EMAIL = "admin@acme.com"
-ADMIN_PASSWORD = "admin12345"
-admin_user = User(
-    email=ADMIN_EMAIL, hashed_password=hash_password(ADMIN_PASSWORD), full_name="Demo Admin",
-    role=UserRole.COMPANY_ADMIN, company_id=co.id,
-)
-db.add(admin_user); db.flush()
-
-# A real login-capable umpire account, for scoring matches from a second device/role.
-UMPIRE_EMAIL = "umpire@acme.com"
-UMPIRE_PASSWORD = "umpire12345"
-umpire_user = User(
-    email=UMPIRE_EMAIL, hashed_password=hash_password(UMPIRE_PASSWORD), full_name="Demo Umpire",
-    role=UserRole.UMPIRE, company_id=co.id,
-)
-db.add(umpire_user); db.flush()
->>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 
 strikers = Team(company_id=co.id, name="Acme Strikers", coach_name="R. Sharma")
 titans = Team(company_id=co.id, name="Acme Titans", coach_name="V. Kohli")
@@ -182,11 +148,7 @@ for outcome in sequence:
     svc.record_delivery(live_inn1.id, BallInput(hero.id, partner.id, bowler.id, outcome))
 db.commit()
 
-<<<<<<< HEAD
 print(f"Demo data added.")
-=======
-print(f"Seed complete.")
->>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
 print(f"  Live match ID: {live_match.id}  (Strikers vs Warriors — watch this one in the frontend)")
 print(f"  Completed match ID: {past_match.id}")
 print(f"  Tournament ID: {tourn.id}")

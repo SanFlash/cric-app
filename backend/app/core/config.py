@@ -47,7 +47,6 @@ class Settings(BaseSettings):
     ALLOWED_IMAGE_TYPES: list[str] = ["image/jpeg", "image/png", "image/webp"]
     UPLOAD_DIR: str = "./uploads"
 
-<<<<<<< HEAD
     # --- Default login accounts, auto-created on first startup ---
     # Overridable via env vars for anyone who wants different credentials
     # (e.g. a real deployment beyond a private demo). Both seed_demo.py and
@@ -61,8 +60,6 @@ class Settings(BaseSettings):
     DEFAULT_UMPIRE_PASSWORD: str = "umpire12345"
     DEFAULT_UMPIRE_NAME: str = "Umpire"
 
-=======
->>>>>>> 2b62d77b1fb08b6a939484d5f898e3166fe708b0
     # --- Prediction engine weights (admin-configurable defaults) ---
     RATING_WEIGHT_BATTING: float = 0.25
     RATING_WEIGHT_BOWLING: float = 0.25
