@@ -19,13 +19,14 @@ from app.models.org import Company, User
 from app.models.enums import UserRole
 
 
-def ensure_default_accounts(db: Session) -> tuple[User, User]:
-    """Returns (admin_user, umpire_user), creating them (and a company for
-    them to belong to) only if they don't already exist."""
+def ensure_default_accounts(db: Session) -> tuple[User, User, User]:
+    """Returns (admin_user, umpire_user, player_user), creating them (and a
+    company for them to belong to) only if they don't already exist."""
     admin = db.query(User).filter(User.email == settings.DEFAULT_ADMIN_EMAIL).first()
     umpire = db.query(User).filter(User.email == settings.DEFAULT_UMPIRE_EMAIL).first()
-    if admin and umpire:
-        return admin, umpire  # already bootstrapped — nothing to do
+    player = db.query(User).filter(User.email == settings.DEFAULT_PLAYER_EMAIL).first()
+    if admin and umpire and player:
+        return admin, umpire, player  # already bootstrapped — nothing to do
 
     company = db.query(Company).filter(Company.name == settings.DEFAULT_COMPANY_NAME).first()
     if not company:
@@ -53,7 +54,18 @@ def ensure_default_accounts(db: Session) -> tuple[User, User]:
         )
         db.add(umpire)
 
+    if not player:
+        player = User(
+            email=settings.DEFAULT_PLAYER_EMAIL,
+            hashed_password=hash_password(settings.DEFAULT_PLAYER_PASSWORD),
+            full_name=settings.DEFAULT_PLAYER_NAME,
+            role=UserRole.PLAYER,
+            company_id=company.id,
+        )
+        db.add(player)
+
     db.commit()
     db.refresh(admin)
     db.refresh(umpire)
-    return admin, umpire
+    db.refresh(player)
+    return admin, umpire, player

@@ -59,6 +59,13 @@ class Settings(BaseSettings):
     DEFAULT_UMPIRE_EMAIL: str = "umpire@acme.com"
     DEFAULT_UMPIRE_PASSWORD: str = "umpire12345"
     DEFAULT_UMPIRE_NAME: str = "Umpire"
+    # A single shared "spectator" login — any player can use it to watch
+    # live scores and browse performance stats, read-only. Not tied to a
+    # specific Player row (this app has no per-player self-signup), so it's
+    # a common credential by design, not one account per player.
+    DEFAULT_PLAYER_EMAIL: str = "player@acme.com"
+    DEFAULT_PLAYER_PASSWORD: str = "player12345"
+    DEFAULT_PLAYER_NAME: str = "Player"
 
     # --- Prediction engine weights (admin-configurable defaults) ---
     RATING_WEIGHT_BATTING: float = 0.25

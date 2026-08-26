@@ -102,6 +102,40 @@ def update_team(team_id: int, payload: TeamUpdate, db: Session = Depends(get_db)
     return team
 
 
+@router.delete(
+    "/{team_id}",
+    status_code=204,
+    dependencies=[Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN))],
+)
+def delete_team(team_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """
+    Soft-delete only — never hard-deletes, since Match/Innings/Delivery
+    rows reference teams by foreign key. Blocked (400) while the team
+    still has active players, rather than silently orphaning their
+    team_id — the admin removes/transfers players first, same as most
+    real admin tools require before letting you delete a parent record.
+    """
+    from datetime import datetime, timezone
+    from app.models.org import Player
+
+    team = db.get(Team, team_id)
+    if not team or team.is_deleted:
+        raise HTTPException(status_code=404, detail="Team not found")
+    require_company_scope(user, team.company_id)
+
+    active_players = db.query(Player).filter(Player.team_id == team_id, Player.is_deleted.is_(False)).count()
+    if active_players > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"This team still has {active_players} player(s). Remove or transfer them before deleting the team.",
+        )
+
+    team.is_deleted = True
+    team.deleted_at = datetime.now(timezone.utc)
+    db.commit()
+    return None
+
+
 class InviteOut(BaseModel):
     token: str
     invite_url: str
