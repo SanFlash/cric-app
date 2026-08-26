@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.services.leaderboard_service import LeaderboardService
+from app.models.org import Player
 
 router = APIRouter(prefix="/leaderboards", tags=["leaderboards"])
 
@@ -13,6 +14,7 @@ class LeaderboardEntryOut(BaseModel):
     full_name: str
     value: float
     secondary: str | None = None
+    profile_image_url: str | None = None
 
 
 BATTING_METRICS = {
@@ -54,4 +56,8 @@ def get_leaderboard(
     else:
         results = method(tournament_id=tournament_id, team_id=team_id, limit=limit)
 
-    return [LeaderboardEntryOut(**r.__dict__) for r in results]
+    photo_by_id = {
+        p.id: p.profile_image_url
+        for p in db.query(Player.id, Player.profile_image_url).filter(Player.id.in_([r.player_id for r in results])).all()
+    }
+    return [LeaderboardEntryOut(**r.__dict__, profile_image_url=photo_by_id.get(r.player_id)) for r in results]

@@ -127,8 +127,8 @@ export function LiveMatch() {
             {payload.event && <BallAnimation key={payload.event.delivery_id} event={payload.event} />}
 
             <NowPlaying
-              striker={payload.event?.striker ?? payload.current_players?.striker}
-              nonStriker={payload.event?.non_striker ?? payload.current_players?.non_striker}
+              striker={payload.event?.current_striker ?? payload.current_players?.striker}
+              nonStriker={payload.event?.current_non_striker ?? payload.current_players?.non_striker}
               bowler={payload.event?.bowler ?? payload.current_players?.bowler}
             />
 

@@ -15,6 +15,10 @@ const NAV_ITEMS = [
   { to: "/leaderboards", label: "Leaderboards", icon: "▲" },
 ];
 
+// The common player login is a read-only spectator: watch live scores and
+// browse performance stats, nothing management- or scoring-related.
+const SPECTATOR_NAV_PATHS = new Set(["/", "/live", "/predictions", "/players", "/leaderboards"]);
+
 const COMING_SOON = ["Notifications", "Settings"];
 
 const ROLE_LABELS: Record<string, string> = {
@@ -26,7 +30,8 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, isSpectatorOnly } = useAuth();
+  const visibleNavItems = isSpectatorOnly ? NAV_ITEMS.filter((i) => SPECTATOR_NAV_PATHS.has(i.to)) : NAV_ITEMS;
   return (
     <>
       <div className="mb-8 flex items-center gap-2">
@@ -42,7 +47,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => (
+        {visibleNavItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

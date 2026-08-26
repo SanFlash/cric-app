@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { endpoints, type SquadOut, type TeamOut } from "../api/client";
 import { Modal } from "../components/Modal";
+import { UploadedImage } from "../components/UploadedImage";
 import { useAuth } from "../hooks/useAuth";
 
 export function Squads() {
@@ -88,11 +89,14 @@ export function Squads() {
               className="block rounded-xl border p-5 transition-colors hover:border-[var(--color-amber-dim)]"
               style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}
             >
+              <div className="mb-2 flex items-center gap-2">
+                <UploadedImage src={teamById[s.team_id]?.logo_url} name={teamById[s.team_id]?.name ?? `Team ${s.team_id}`} size={24} shape="square" />
+                <div className="text-xs" style={{ color: "var(--color-cream-faint)" }}>
+                  {teamById[s.team_id]?.name ?? `Team ${s.team_id}`}
+                </div>
+              </div>
               <div className="text-lg font-semibold" style={{ color: "var(--color-cream)", fontFamily: "var(--font-display)" }}>
                 {s.name}
-              </div>
-              <div className="mt-1 text-xs" style={{ color: "var(--color-cream-faint)" }}>
-                {teamById[s.team_id]?.name ?? `Team ${s.team_id}`}
               </div>
             </Link>
           </motion.div>

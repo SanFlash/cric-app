@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { endpoints, type PlayerOut, type RatingOut, type FormPointOut, type AchievementOut } from "../api/client";
 import { RatingBreakdown } from "../components/RatingBreakdown";
 import { FormGraph } from "../components/FormGraph";
+import { UploadedImage } from "../components/UploadedImage";
 
 const ACHIEVEMENT_ICONS: Record<string, string> = {
   CENTURY: "💯",
@@ -54,13 +55,16 @@ export function PlayerDetail() {
       </Link>
 
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-cream)" }}>
-            {player.full_name}
-          </h1>
-          <p className="mt-1 text-sm capitalize" style={{ color: "var(--color-cream-faint)" }}>
-            {player.playing_role.replace("_", " ")}
-          </p>
+        <div className="flex items-center gap-4">
+          <UploadedImage src={player.profile_image_url} name={player.full_name} size={64} shape="circle" />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)", color: "var(--color-cream)" }}>
+              {player.full_name}
+            </h1>
+            <p className="mt-1 text-sm capitalize" style={{ color: "var(--color-cream-faint)" }}>
+              {player.playing_role.replace("_", " ")}
+            </p>
+          </div>
         </div>
         {player.current_rating > 0 && (
           <div className="text-right">

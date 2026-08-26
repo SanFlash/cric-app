@@ -7,7 +7,7 @@ from app.api.deps import get_current_user, require_roles
 from app.models.org import User, Player
 from app.models.match import Innings, Match
 from app.models.enums import UserRole, DeliveryOutcome, DismissalType
-from app.services.scoring_service import ScoringService, BallInput
+from app.services.scoring_service import ScoringService, BallInput, current_batters_after
 from app.services.prediction_engine import PredictionEngine
 from app.ws.live_match import manager
 
@@ -64,6 +64,7 @@ async def score_delivery(payload: DeliveryIn, db: Session = Depends(get_db), use
     # same moment). over_completed additionally signals "prompt for a new
     # bowler" to the scorer.
     over_just_completed = delivery.is_legal_delivery and delivery.ball_in_over == 6 and not innings.is_completed
+    current_striker_id, current_non_striker_id = current_batters_after(delivery)
 
     def _player_brief(player_id: int | None) -> dict | None:
         if player_id is None:
@@ -81,14 +82,20 @@ async def score_delivery(payload: DeliveryIn, db: Session = Depends(get_db), use
         "runs_batter": delivery.runs_batter,
         "over_completed": over_just_completed,
         "previous_bowler_id": delivery.bowler_id if over_just_completed else None,
-        # Who was actually involved in this ball — lets any connected client
-        # (scorer or viewer) show live "now batting / now bowling" avatars
-        # without a separate API round-trip.
+        # Who batted THIS specific ball — historically accurate, never
+        # rotated. Used for e.g. "who got dismissed" logic.
         "striker": _player_brief(delivery.striker_id),
         "non_striker": _player_brief(delivery.non_striker_id),
         "bowler": _player_brief(delivery.bowler_id),
         "dismissed_player": _player_brief(delivery.dismissed_player_id),
         "fielder": _player_brief(delivery.fielder_id),
+        # Who's actually on strike for the NEXT ball — accounts for
+        # odd-run/end-of-over rotation. This is what "who's currently
+        # batting" displays and reconnect/reopen restoration should use;
+        # the plain striker/non_striker fields above are the pre-rotation
+        # historical record of this one delivery, not the current state.
+        "current_striker": _player_brief(current_striker_id),
+        "current_non_striker": _player_brief(current_non_striker_id),
     }
 
     # Live Win Predictor (section 15) — recalculate after every ball once the

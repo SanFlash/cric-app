@@ -22,10 +22,11 @@ db = SessionLocal()
 # duplicate accounts. This script's actual job is everything AFTER this:
 # realistic demo teams/players/matches to explore the analytics engines
 # with, which the app has no way to auto-generate for you.
-admin_user, umpire_user = ensure_default_accounts(db)
+admin_user, umpire_user, player_user = ensure_default_accounts(db)
 co = db.get(Company, admin_user.company_id)
 ADMIN_EMAIL, ADMIN_PASSWORD = settings.DEFAULT_ADMIN_EMAIL, settings.DEFAULT_ADMIN_PASSWORD
 UMPIRE_EMAIL, UMPIRE_PASSWORD = settings.DEFAULT_UMPIRE_EMAIL, settings.DEFAULT_UMPIRE_PASSWORD
+PLAYER_EMAIL, PLAYER_PASSWORD = settings.DEFAULT_PLAYER_EMAIL, settings.DEFAULT_PLAYER_PASSWORD
 
 strikers = Team(company_id=co.id, name="Acme Strikers", coach_name="R. Sharma")
 titans = Team(company_id=co.id, name="Acme Titans", coach_name="V. Kohli")
@@ -162,3 +163,7 @@ print(f"\n  Or log in as the umpire account:")
 print(f"    Email:    {UMPIRE_EMAIL}")
 print(f"    Password: {UMPIRE_PASSWORD}")
 print(f"  (Umpire — can start and score matches at /score, but not manage teams/players)")
+print(f"\n  Or log in as the player account (read-only spectator):")
+print(f"    Email:    {PLAYER_EMAIL}")
+print(f"    Password: {PLAYER_PASSWORD}")
+print(f"  (Player — can watch live scores and browse performance stats only)")

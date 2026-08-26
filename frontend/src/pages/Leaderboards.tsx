@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { endpoints, type LeaderboardEntryOut } from "../api/client";
+import { UploadedImage } from "../components/UploadedImage";
 
 const METRICS = [
   { key: "most_runs", label: "Most Runs", unit: "runs" },
@@ -84,6 +85,7 @@ export function Leaderboards() {
                 >
                   {i + 1}
                 </span>
+                <UploadedImage src={e.profile_image_url} name={e.full_name} size={28} shape="circle" />
                 <span style={{ color: "var(--color-cream)" }}>{e.full_name}</span>
                 {e.secondary && (
                   <span className="text-xs" style={{ color: "var(--color-cream-faint)" }}>

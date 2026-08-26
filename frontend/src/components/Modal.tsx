@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Modal({
@@ -11,6 +12,19 @@ export function Modal({
   title: string;
   children: React.ReactNode;
 }) {
+  // Escape closes any modal in the app, since this component is shared by
+  // every one of them — a real gap found via testing, not just a nicety:
+  // without it, a modal left open (e.g. by a keyboard-driven flow) blocks
+  // every click underneath it with no way out except finding the small ✕.
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   return (
     <AnimatePresence>
       {open && (

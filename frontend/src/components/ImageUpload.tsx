@@ -13,7 +13,7 @@ export function ImageUpload({
   shape?: "square" | "circle";
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(currentUrl ?? null);
+  const [preview, setPreview] = useState<string | null>(resolveUploadUrl(currentUrl) ?? null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

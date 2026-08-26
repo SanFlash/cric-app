@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.match import Innings, Delivery
 from app.models.org import Player
+from app.services.scoring_service import current_batters_after
 
 router = APIRouter()
 
@@ -74,6 +75,10 @@ def _current_snapshot(db: Session, match_id: int) -> dict | None:
         .order_by(Delivery.sequence_no.desc())
         .first()
     )
+    # Who's ACTUALLY on strike for the next ball — not just who batted the
+    # last one — accounting for odd-run/end-of-over rotation. Otherwise a
+    # reconnect/reopen restores the wrong batter as striker.
+    current_striker_id, current_non_striker_id = current_batters_after(last_ball)
 
     return {
         "type": "scoreboard_snapshot",
@@ -88,8 +93,8 @@ def _current_snapshot(db: Session, match_id: int) -> dict | None:
         # So a viewer who joins mid-match sees who's at the crease immediately,
         # not just after the next ball is bowled.
         "current_players": {
-            "striker": _player_brief(last_ball.striker_id) if last_ball else None,
-            "non_striker": _player_brief(last_ball.non_striker_id) if last_ball else None,
+            "striker": _player_brief(current_striker_id),
+            "non_striker": _player_brief(current_non_striker_id),
             "bowler": _player_brief(last_ball.bowler_id) if last_ball else None,
         } if last_ball else None,
     }

@@ -40,7 +40,7 @@ function Btn({ children, onClick, disabled, color = "var(--color-pitch-700)", te
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg py-3 text-center text-lg font-bold transition-transform active:scale-95 disabled:opacity-30"
+      className="rounded-lg py-2 text-center text-sm font-bold transition-transform active:scale-95 disabled:opacity-30 sm:py-3 sm:text-lg"
       style={{ backgroundColor: color, color: textColor, fontFamily: "var(--font-mono)" }}
     >
       {children}
@@ -182,8 +182,24 @@ export function Scorer() {
     });
   }, [payload?.event?.delivery_id]);
 
-  // A new innings starts with a clean slate — nobody's out yet.
+  // Fires once per distinct innings — either a genuinely new innings
+  // starting (clean slate, nobody out yet), or the first payload arriving
+  // after a page reload/reopen/different device for an innings already in
+  // progress. In the reopen case, restore the real striker/non-striker/
+  // bowler from the match's actual current state (the backend's WS
+  // snapshot-on-connect already includes this) instead of leaving the
+  // pickers blank and forcing the scorer to re-pick players who are
+  // already at the crease — that "previous data disappeared" feeling was
+  // this effect never existing at all; the state was never actually lost
+  // server-side, the UI just never asked for it back.
   useEffect(() => {
+    if (payload?.innings_id == null) return;
+    const cp = payload.current_players ?? (payload.event
+      ? { striker: payload.event.current_striker, non_striker: payload.event.current_non_striker, bowler: payload.event.bowler }
+      : null);
+    setStrikerId(cp?.striker?.id ?? "");
+    setNonStrikerId(cp?.non_striker?.id ?? "");
+    setBowlerId(cp?.bowler?.id ?? "");
     setUnavailableBatterIds(new Set());
     setNeedNewBatsman(null);
   }, [payload?.innings_id]);
@@ -305,16 +321,19 @@ export function Scorer() {
       {payload?.event && <BallAnimation key={payload.event.delivery_id} event={payload.event} />}
 
       <NowPlaying
-        striker={payload?.event?.striker ?? payload?.current_players?.striker}
-        nonStriker={payload?.event?.non_striker ?? payload?.current_players?.non_striker}
+        striker={payload?.event?.current_striker ?? payload?.current_players?.striker}
+        nonStriker={payload?.event?.current_non_striker ?? payload?.current_players?.non_striker}
         bowler={payload?.event?.bowler ?? payload?.current_players?.bowler}
       />
 
       {payload && (
         <>
           {match && chaseSummary && <ChaseBanner chase={chaseSummary} />}
-          <div className="mb-6 rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.6)" }}>
-            <ScoreboardValue value={payload.score} size="text-5xl" />
+          <div
+            className="sticky top-[52px] z-20 mb-6 rounded-xl border p-4 sm:static sm:top-auto sm:z-auto sm:p-5"
+            style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-950)" }}
+          >
+            <ScoreboardValue value={payload.score} size="text-4xl sm:text-5xl" />
           <div className="mt-2 flex gap-4 font-mono text-sm" style={{ color: "var(--color-cream-dim)", fontFamily: "var(--font-mono)" }}>
             <span>Overs {payload.overs}</span>
             <span>RR {payload.run_rate.toFixed(2)}</span>
@@ -411,7 +430,7 @@ export function Scorer() {
       <button
         onClick={() => setShowWicket(true)}
         disabled={scoring || blocked}
-        className="w-full rounded-lg py-3 text-center text-lg font-bold transition-opacity hover:opacity-90 disabled:opacity-30"
+        className="w-full rounded-lg py-2 text-center text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-30 sm:py-3 sm:text-lg"
         style={{ backgroundColor: "var(--color-crimson)", color: "white", fontFamily: "var(--font-mono)" }}
       >
         WICKET

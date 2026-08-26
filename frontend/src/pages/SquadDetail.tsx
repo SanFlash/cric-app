@@ -9,6 +9,7 @@ import {
   type XIRecommendationOut,
 } from "../api/client";
 import { useAuth } from "../hooks/useAuth";
+import { UploadedImage } from "../components/UploadedImage";
 
 const ROLE_COLORS: Record<string, string> = {
   batter: "var(--color-amber)",
@@ -159,6 +160,7 @@ export function SquadDetail() {
                       className="h-1.5 w-1.5 rounded-full"
                       style={{ backgroundColor: sp.is_available ? "var(--color-win)" : "var(--color-crimson)" }}
                     />
+                    <UploadedImage src={p?.profile_image_url} name={p?.full_name ?? "?"} size={22} shape="circle" />
                     <span style={{ color: "var(--color-cream)" }}>{p?.full_name ?? `Player ${sp.player_id}`}</span>
                     {p && (
                       <span

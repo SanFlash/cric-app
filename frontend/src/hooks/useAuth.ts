@@ -39,6 +39,9 @@ export function useAuth() {
 
   const ADMIN_ROLES = ["super_admin", "company_admin"];
   const canManageTeams = !!user && (ADMIN_ROLES.includes(user.role) || user.role === "captain");
+  // The common player login — read-only: watch live scores, browse
+  // performance stats. Not scoped to manage or score anything.
+  const isSpectatorOnly = !!user && user.role === "player";
 
-  return { user, loading, logout, refresh, canManageTeams };
+  return { user, loading, logout, refresh, canManageTeams, isSpectatorOnly };
 }

@@ -132,6 +132,7 @@ export interface LeaderboardEntryOut {
   full_name: string;
   value: number;
   secondary: string | null;
+  profile_image_url: string | null;
 }
 
 export interface SquadOut {
@@ -221,6 +222,7 @@ export const endpoints = {
     api.post<TeamOut>("/teams", payload),
   updateTeam: (id: number, payload: Partial<{ name: string; logo_url: string; coach_name: string }>) =>
     api.patch<TeamOut>(`/teams/${id}`, payload),
+  deleteTeam: (id: number) => api.delete(`/teams/${id}`),
   createInvite: (teamId: number) => api.post<{ token: string; invite_url: string; expires_at: string }>(`/teams/${teamId}/invites`),
   getInvite: (token: string) => api.get<{ valid: boolean; team_name: string | null; team_id: number | null; reason: string | null }>(`/invites/${token}`),
   acceptInvite: (token: string, payload: { email: string; password: string; full_name: string; team_logo_url?: string }) =>
@@ -235,6 +237,8 @@ export const endpoints = {
   players: (teamId?: number) => api.get<PlayerOut[]>("/players", { params: { team_id: teamId } }),
   player: (id: number) => api.get<PlayerOut>(`/players/${id}`),
   createPlayer: (payload: Record<string, unknown>) => api.post<PlayerOut>("/players", payload),
+  updatePlayer: (id: number, payload: Record<string, unknown>) => api.patch<PlayerOut>(`/players/${id}`, payload),
+  deletePlayer: (id: number) => api.delete(`/players/${id}`),
   squads: (teamId?: number) => api.get<SquadOut[]>("/squads", { params: { team_id: teamId } }),
   createSquad: (payload: { team_id: number; name: string; tournament_id?: number }) =>
     api.post<SquadOut>("/squads", payload),

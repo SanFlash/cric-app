@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { endpoints, type LeaderboardEntryOut, type TeamOut } from "../api/client";
 import { StatCard } from "../components/StatCard";
+import { UploadedImage } from "../components/UploadedImage";
 
 export function Dashboard() {
   const [teams, setTeams] = useState<TeamOut[]>([]);
@@ -75,7 +76,10 @@ export function Dashboard() {
               className="rounded-lg border px-4 py-3"
               style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19, 28, 24, 0.5)" }}
             >
-              <div className="font-medium" style={{ color: "var(--color-cream)" }}>{t.name}</div>
+              <div className="flex items-center gap-2">
+                <UploadedImage src={t.logo_url} name={t.name} size={28} shape="square" />
+                <div className="font-medium" style={{ color: "var(--color-cream)" }}>{t.name}</div>
+              </div>
               {t.coach_name && (
                 <div className="mt-0.5 text-xs" style={{ color: "var(--color-cream-faint)" }}>
                   Coach: {t.coach_name}
@@ -131,6 +135,7 @@ function LeaderboardPanel({
               <span className="font-mono text-xs" style={{ color: "var(--color-cream-faint)", fontFamily: "var(--font-mono)" }}>
                 {String(i + 1).padStart(2, "0")}
               </span>
+              <UploadedImage src={e.profile_image_url} name={e.full_name} size={24} shape="circle" />
               <span style={{ color: "var(--color-cream)" }}>{e.full_name}</span>
             </div>
             <span className="font-mono text-sm font-semibold" style={{ color, fontFamily: "var(--font-mono)" }}>

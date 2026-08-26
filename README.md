@@ -848,6 +848,141 @@ is still in the repo and still works — swap `env: python` +
 this project; native Python is simpler to reason about and was requested
 specifically, so it's the default in the committed `render.yaml`.
 
+## Added: team/player edit & remove, a read-only player login, and real mobile bug fixes
+
+- **Team edit/delete** — "Edit Team" (name, coach, logo — reuses the
+  existing `PATCH /teams/{id}`) and "Delete Team" on Team Detail. Added
+  the missing `DELETE /teams/{id}` endpoint: soft-delete only (never hard,
+  since Match/Innings reference teams by FK), and **blocked with a clear
+  400** while the team still has active players rather than silently
+  orphaning their `team_id` — "Remove or transfer them before deleting
+  the team." **Verified**: renamed a team through the real UI and
+  confirmed the new name appeared everywhere.
+- **Player edit/remove** — "Edit" and "Remove" per roster row (name,
+  role, jersey, photo — reuses the existing `PATCH`/`DELETE
+  /players/{id}`, both already backend-complete from earlier phases,
+  soft-delete preserving career stats). **Verified**: renamed a player
+  through the real UI, confirmed the old name was gone and the new one
+  showed.
+- **Read-only player login** — a third bootstrapped account
+  (`player@acme.com` / `player12345`, role `PLAYER`), sharing the same
+  idempotent `ensure_default_accounts()` as admin/umpire (no duplicate-
+  account risk). Sidebar nav filters to Dashboard/Live Match/
+  Predictions/Players/Leaderboards for this role — Score a Match/Teams/
+  Squads/Tournaments hidden. **Verified** via the actual rendered nav on
+  both desktop and mobile. **Known, undisguised gap**: this is nav-level
+  only — a player who directly types `/teams` into the URL bar can still
+  reach it (create/edit buttons stay correctly hidden since those already
+  check role, but the page itself isn't route-guarded). Worth closing
+  properly if this needs to be a hard boundary rather than decluttering.
+
+### Two real bugs caught by testing at actual mobile width, not assumed fixed
+
+1. **Modal didn't close on Escape.** Found while testing the new Delete
+   Team confirmation on a 390px viewport: pressing Escape after opening
+   Edit Team left it open, silently blocking every click underneath it
+   (Playwright's error made this obvious: "intercepts pointer events").
+   Fixed in the shared `Modal` component — since every modal in the app
+   uses it, this fixes all of them at once, not just the two new ones.
+2. **Roster table's new Actions column visually overlapped the Rating
+   column** at mobile width — "Edit" was rendering on top of the rating
+   number instead of beside it, because a `col-span-1` slot in an
+   already-full 12-column grid was too narrow for two side-by-side text
+   links. Fixed by reallocating columns (Wkts/Econ 2→1) and stacking
+   "Edit"/"Remove" vertically instead of side-by-side. Re-verified after
+   the fix: clean, non-overlapping, fully readable.
+
+Also fixed a **latent** bug while reading `ImageUpload.tsx` for the above
+(not yet visibly broken, but would have failed silently in production):
+its initial preview never ran the existing `currentUrl` through
+`resolveUploadUrl()`, so editing a team/player that already had a real
+photo would show an unresolved relative path — invisible in local dev
+(the Vite proxy papers over it) but broken the moment `VITE_API_URL` is
+set for a real cross-origin deployment. Fixed proactively.
+
+## Added: a real scoring-state bug fix, WS auto-reconnect, images everywhere, smaller mobile buttons
+
+Five distinct issues reported together, addressed individually — some
+were real bugs, one is an infrastructure limitation being clearly
+explained rather than silently left unfixed.
+
+### 1. Reopening a match "lost" the striker/non-striker/bowler — genuinely fixed, and it was worse than it first looked
+
+The pickers never restored from the match's real state on reload — they
+always started blank, forcing the scorer to re-pick players who were
+already at the crease. Fixing the obvious version of this surfaced a
+second, more interesting bug: the backend's reconnect snapshot returned
+the *raw* last-delivery's striker/non-striker, never accounting for
+strike rotation (odd runs, end of over). So a naive fix would have
+"restored" the *wrong* batter on strike after almost every reload.
+
+Fixed at the source with one shared backend function
+(`current_batters_after` in `scoring_service.py`) used by **both** the
+reconnect snapshot and the live per-ball broadcast — so `NowPlaying`'s
+live display and the Scorer's own restoration logic are both correct,
+not fixed in one place and silently still wrong in the other.
+
+**Verified two ways**: unit-tested the rotation function directly with 6
+cases (odd runs, even runs, end-of-over, the odd-runs-on-last-ball
+cancellation case, a wicket, and no-delivery-yet) — all 6 passed exactly.
+Then end-to-end in the browser: scored a 4 then a 1 (an odd run — strike
+should rotate), fully reloaded the page, confirmed the restored
+striker/non-striker exactly matched the correct rotated state, not the
+stale pre-rotation one.
+
+### 2. "Takes time to reconnect" — there was no reconnect logic at all
+
+Confirmed by reading `useLiveMatch.ts`: if the WebSocket dropped (very
+common on mobile when a tab backgrounds), `onclose` just set
+`connected=false` and nothing ever reconnected — the whole page had to
+remount to get a live connection back. Fixed: automatic reconnect with
+short capped backoff (500ms doubling to a 5s ceiling), plus an immediate
+reconnect the moment the tab becomes visible again, so the common
+"switched apps and came back" case feels instant rather than eventual.
+
+### 3. "Scoring not visible on mobile" — the scoreboard scrolled out of view while using the buttons below it
+
+Fixed by making the scoreboard card sticky on mobile (pinned just below
+the top bar) and shrinking button padding/font on mobile specifically
+(scaling back up on larger screens), as requested. **Verified with a
+deliberately tall page** (chase banner active, shorter 700px viewport to
+force scrolling): screenshotted before and after scrolling 350px toward
+the WICKET button — the scoreboard stayed visibly pinned in place the
+whole time, while the non-sticky chase banner above it correctly
+scrolled out of frame.
+
+### 4. Team logos and player photos were missing across most of the app
+
+Audited every page and found genuinely **zero** image usage on Squads,
+Squad Detail, Leaderboards, Player Detail, and Dashboard, despite all of
+them showing player/team names constantly. Added a required backend
+schema field along the way — `LeaderboardEntryOut` never had a photo
+field at all. Verified visually across all of these after the fix;
+skipped two spots on purpose rather than force it: the compact
+Predictions match-switcher pills (two team logos would clutter an
+already-small button) and the XI-recommendation slots (that response
+shape doesn't carry photos — would need a further backend addition).
+
+### 5. Images silently reverting to initials after a relogin / on another device
+
+**Not independently reproduced this round — the honest status is
+"probably the known limitation, not fully confirmed."** If this is
+happening on the deployed Render version, it matches the already-
+documented ephemeral-disk behavior exactly: free-tier Render has no
+persistent disk, so `backend/uploads/` is wiped on every spin-down or
+redeploy while the database still remembers the old file path — the
+`UploadedImage` component's `onError` fallback (added two rounds ago)
+means this now displays as a clean initials avatar instead of a broken
+icon, but the underlying photo is still genuinely gone; that needs real
+object storage (S3/R2/a paid disk) to actually fix, not implemented
+here. If this is instead happening in **local** testing without a
+server restart in between — which would be unexpected, since local disk
+persists across requests on the same running process — that points at
+something else entirely, and would need more specifics to track down
+(is the backend being restarted or the database reseeded between the
+two sessions? are "this device" and "the other device" hitting the same
+backend, or two separate local instances?).
+
 ## Added: new-batsman-required on wicket, retired hurt, chase summary, resilient images
 
 - **New batsman required after a wicket.** Mirrors the existing

@@ -45,6 +45,46 @@ class BallInput:
     fielder_id: int | None = None
 
 
+def current_batters_after(last_delivery: Delivery | None) -> tuple[int | None, int | None]:
+    """
+    Given the most recent delivery in an innings, returns who is actually
+    on strike / at the non-striker's end for the NEXT ball — not just the
+    raw striker_id/non_striker_id the delivery recorded (which reflect who
+    batted THAT ball, before any end-of-ball rotation). Used by both the
+    WS reconnect snapshot and the live per-ball broadcast, so there's one
+    source of truth for "who's actually at the crease right now" instead
+    of each caller reimplementing rotation and risking drift.
+
+    Rotation rules: an odd number of runs off the bat, or completing an
+    over, swaps ends. A wicket nulls out whichever end was dismissed
+    (the frontend prompts for a replacement) — but batters can still have
+    crossed for a run before the dismissal (e.g. a run-out attempting a
+    second), so rotation is evaluated first, then the dismissed slot is
+    cleared on whichever end it ended up on.
+    """
+    if last_delivery is None:
+        return None, None
+
+    striker, non_striker = last_delivery.striker_id, last_delivery.non_striker_id
+    if last_delivery.is_legal_delivery:
+        odd_runs = last_delivery.runs_batter % 2 == 1
+        over_complete = last_delivery.ball_in_over == 6
+        # XOR: an odd run crosses the batters; end-of-over crosses them
+        # again for the new over. Both together cancel out — nobody
+        # actually ends up swapped — which is exactly the real cricket
+        # rule, not a coincidence.
+        if odd_runs != over_complete:
+            striker, non_striker = non_striker, striker
+
+    if last_delivery.is_wicket and last_delivery.dismissed_player_id is not None:
+        if striker == last_delivery.dismissed_player_id:
+            striker = None
+        elif non_striker == last_delivery.dismissed_player_id:
+            non_striker = None
+
+    return striker, non_striker
+
+
 class ScoringService:
     def __init__(self, db: Session):
         self.db = db
