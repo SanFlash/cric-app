@@ -328,7 +328,7 @@ export function Scorer() {
 
       {payload && (
         <>
-          {match && chaseSummary && <ChaseBanner chase={chaseSummary} />}
+          {match && chaseSummary && !payload?.is_completed && <ChaseBanner chase={chaseSummary} />}
           <div
             className="sticky top-[52px] z-20 mb-6 rounded-xl border p-4 sm:static sm:top-auto sm:z-auto sm:p-5"
             style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-950)" }}

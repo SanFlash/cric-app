@@ -983,7 +983,57 @@ something else entirely, and would need more specifics to track down
 two sessions? are "this device" and "the other device" hitting the same
 backend, or two separate local instances?).
 
-## Added: new-batsman-required on wicket, retired hurt, chase summary, resilient images
+## Added: match-completion awards — Player of the Match, highest scorer, best bowler
+
+New `MatchSummaryEngine` (backend) + `MatchSummaryCard` (frontend),
+following the same discipline as the existing InsightEngine: every number
+is read directly from the `BattingPerformance`/`BowlingPerformance` rows
+already written when the match was finalized — nothing invented, nothing
+estimated.
+
+- **Highest Scorer** — most runs, with strike rate on the headline and a
+  genuinely computed "why it mattered" note: their share of the team's
+  total runs.
+- **Best Bowler** — most wickets (economy as tiebreak), with a note
+  comparing their economy to the innings' overall run rate — **but only
+  shown when it's actually a positive fact**. Caught a real logic bug
+  while testing this: an earlier version always displayed the comparison
+  regardless of direction, so a bowler with an *above-average* economy
+  got a note phrased as if it were a strength. Fixed to only surface the
+  note when their economy is genuinely below the innings rate.
+- **Player of the Match** — a simple, transparent composite (batting
+  runs+boundaries, bowling wickets−economy, summed per player so an
+  all-rounder's two performances count together rather than only their
+  better one), not a black box.
+- Shown automatically on Live Match Center once `is_completed` flips
+  true — with a green "Match Completed" badge, the real result line
+  ("Won by 29 run(s)"), and all three award cards with player photos.
+
+**Verification story worth being honest about — this one took real
+debugging, not a straight line to working:**
+
+1. First pass: the cards never appeared, despite the API call
+   succeeding with a 200 and correct data confirmed by hitting the
+   endpoint directly. Spent real effort ruling out timing races and
+   checking for thrown errors before adding temporary debug logging
+   directly in the component.
+2. The debug logs proved the data and render condition were both
+   correct — `summary` state held the right object, the JSX condition
+   evaluated true. The actual awards genuinely were rendering.
+3. The real problem was in the *test*, not the app: the badge's CSS
+   `uppercase` class changes what `element.innerText` returns in a real
+   browser (`"MATCH COMPLETED"`, not `"Match Completed"`), so a
+   case-sensitive text assertion was reporting a false failure. Switched
+   to a case-insensitive check and confirmed everything had been working
+   since the first build.
+4. That debugging process paid for itself: while looking at the actual
+   rendered screenshot to confirm, spotted a real, separate bug — the
+   chase-summary banner ("Need X runs...") was still showing on a
+   *completed* match, sitting confusingly right next to "Won by 29
+   run(s)." Fixed by suppressing `ChaseBanner` once `is_completed` is
+   true, on both Scorer and Live Match.
+
+
 
 - **New batsman required after a wicket.** Mirrors the existing
   over-completion bowler prompt: when a wicket comes through the WS

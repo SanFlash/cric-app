@@ -13,6 +13,7 @@ from app.services.prediction_engine import PredictionEngine
 from app.services.xi_recommendation import XIRecommendationEngine
 from app.services.achievement_engine import AchievementEngine
 from app.services.insight_engine import InsightEngine
+from app.services.match_summary_engine import MatchSummaryEngine
 from app.models.performance import Prediction
 from app.schemas.analytics import PlayerCompareOut, PlayerCompareRow, XIRecommendationOut, XISlotOut
 
@@ -242,3 +243,46 @@ def get_player_insights(player_id: int, db: Session = Depends(get_db)):
     an empty list means the player doesn't have enough matches yet, not an error.
     """
     return InsightEngine(db).player_insights(player_id)
+
+
+class MatchAwardOut(BaseModel):
+    player_id: int
+    full_name: str
+    profile_image_url: str | None
+    headline: str
+    game_changer_note: str | None
+
+
+class MatchSummaryOut(BaseModel):
+    player_of_the_match: MatchAwardOut | None
+    highest_scorer: MatchAwardOut | None
+    best_bowler: MatchAwardOut | None
+
+
+@router.get("/matches/{match_id}/summary", response_model=MatchSummaryOut | None)
+def get_match_summary(match_id: int, db: Session = Depends(get_db)):
+    """
+    Match-completion awards — Player of the Match, highest scorer, best
+    bowler — computed from the real per-match BattingPerformance/
+    BowlingPerformance rows. Returns null (not an error) if the match
+    isn't completed yet, so the frontend can just check for a null
+    response rather than handling a 404 specially.
+    """
+    summary = MatchSummaryEngine(db).compute(match_id)
+    if summary is None:
+        return None
+
+    def _to_out(award) -> MatchAwardOut | None:
+        if award is None:
+            return None
+        return MatchAwardOut(
+            player_id=award.player.id, full_name=award.player.full_name,
+            profile_image_url=award.player.profile_image_url,
+            headline=award.headline, game_changer_note=award.game_changer_note,
+        )
+
+    return MatchSummaryOut(
+        player_of_the_match=_to_out(summary.player_of_the_match),
+        highest_scorer=_to_out(summary.highest_scorer),
+        best_bowler=_to_out(summary.best_bowler),
+    )

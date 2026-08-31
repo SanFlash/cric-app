@@ -116,6 +116,20 @@ export interface PredictionOut {
   factors: { items: { factor: string; direction: string; weight: number }[] };
 }
 
+export interface MatchAwardOut {
+  player_id: number;
+  full_name: string;
+  profile_image_url: string | null;
+  headline: string;
+  game_changer_note: string | null;
+}
+
+export interface MatchSummaryOut {
+  player_of_the_match: MatchAwardOut | null;
+  highest_scorer: MatchAwardOut | null;
+  best_bowler: MatchAwardOut | null;
+}
+
 export interface StandingOut {
   team_id: number;
   played: number;
@@ -270,6 +284,7 @@ export const endpoints = {
   latestPrediction: (matchId: number) => api.get<PredictionOut>(`/analytics/matches/${matchId}/predictions/latest`),
   momentum: (matchId: number) => api.get<PredictionOut[]>(`/analytics/matches/${matchId}/predictions/momentum`),
   computePreMatchPrediction: (matchId: number) => api.post<PredictionOut>(`/analytics/matches/${matchId}/predictions/pre-match`),
+  matchSummary: (matchId: number) => api.get<MatchSummaryOut | null>(`/analytics/matches/${matchId}/summary`),
   standings: (tournamentId: number) => api.get<StandingOut[]>(`/tournaments/${tournamentId}/standings`),
   leaderboard: (metric: string, params?: Record<string, unknown>) =>
     api.get<LeaderboardEntryOut[]>(`/leaderboards/${metric}`, { params }),

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { endpoints, type PredictionOut, type MatchOut, type TeamOut } from "../api/client";
 import { useLiveMatch } from "../hooks/useLiveMatch";
 import { ScoreboardValue } from "../components/Scoreboard";
 import { WinProbabilityBar } from "../components/WinProbabilityBar";
@@ -11,6 +10,8 @@ import { NowPlaying } from "../components/NowPlaying";
 import { UploadedImage } from "../components/UploadedImage";
 import { ChaseBanner } from "../components/ChaseBanner";
 import { computeChaseSummary } from "../utils/chase";
+import { MatchSummaryCard } from "../components/MatchSummaryCard";
+import { endpoints, type PredictionOut, type MatchOut, type TeamOut, type MatchSummaryOut } from "../api/client";
 
 export function LiveMatch() {
   const { matchId: matchIdParam } = useParams();
@@ -22,6 +23,7 @@ export function LiveMatch() {
   const [match, setMatch] = useState<MatchOut | null>(null);
   const [teamA, setTeamA] = useState<TeamOut | null>(null);
   const [teamB, setTeamB] = useState<TeamOut | null>(null);
+  const [summary, setSummary] = useState<MatchSummaryOut | null>(null);
   const chaseSummary = payload && match ? computeChaseSummary(payload.score, payload.overs, payload.target, match.overs_limit) : null;
 
   useEffect(() => {
@@ -35,7 +37,10 @@ export function LiveMatch() {
         setTeamB(b.data);
       });
     }).catch(() => setMatch(null));
-  }, [matchId, payload?.score]); // refetch momentum when the score changes
+    if (payload?.is_completed) {
+      endpoints.matchSummary(matchId).then((r) => setSummary(r.data)).catch(() => setSummary(null));
+    }
+  }, [matchId, payload?.score, payload?.is_completed]); // refetch when the score changes, or the match completes
 
   return (
     <div>
@@ -124,6 +129,14 @@ export function LiveMatch() {
               </span>
             </div>
 
+            {payload.is_completed && match?.result_summary && (
+              <div className="mb-4 text-sm font-medium" style={{ color: "var(--color-win)" }}>
+                {match.result_summary}
+              </div>
+            )}
+
+            {payload.is_completed && summary && <MatchSummaryCard summary={summary} />}
+
             {payload.event && <BallAnimation key={payload.event.delivery_id} event={payload.event} />}
 
             <NowPlaying
@@ -132,7 +145,7 @@ export function LiveMatch() {
               bowler={payload.event?.bowler ?? payload.current_players?.bowler}
             />
 
-            {match && chaseSummary && <ChaseBanner chase={chaseSummary} />}
+            {match && chaseSummary && !payload.is_completed && <ChaseBanner chase={chaseSummary} />}
 
             <div className="mb-2">
               <ScoreboardValue value={payload.score} size="text-7xl" />
