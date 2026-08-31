@@ -755,6 +755,27 @@ motion on every connected client, scorer and viewers alike.
 
 ## Added: squad-scoped scoring, a Predictions page, and distinct extras animations
 
+- **Squad-scoped bowler/batter selection.** `Match` gained optional
+  `squad_a_id`/`squad_b_id` fields; `GET /matches/{id}/roster` scopes the
+  Scorer's striker/non-striker/bowler pickers to that squad's *available*
+  players when one is linked, falling back to the full team roster
+  otherwise so nothing breaks for matches that don't use squads.
+  **Verified**: linked a 2-player squad to a match, confirmed the striker
+  dropdown showed exactly 2 selectable players, not the full team roster.
+- **Predictions page** (`/predictions`) — a match switcher, the win-
+  probability bar, the explainability factors list (the actual "why", not
+  just a number), and a momentum chart. **Verified**: computed a real
+  pre-match prediction and confirmed genuine factor numbers appeared
+  (e.g. a squad-rating comparison), not placeholder text.
+- **Three distinct extras animations**, replacing one generic badge:
+  `WideAnim` (ball drifts wide + umpire signal line), `NoBallAnim`
+  (flashing foot-fault line), `ByeAnim` (deflection + a runner still
+  crosses) — visually distinct from each other and from the four/six/
+  wicket animations, confirmed via side-by-side screenshots.
+- **`NowPlaying`** — live striker/non-striker/bowler mini-avatars on both
+  Scorer and Live Match Center, driven by the actual last-scored delivery
+  from the broadcast rather than tentative, unsubmitted dropdown picks.
+
 ## Deploying to Render (from GitHub)
 
 `render.yaml` at the repo root defines everything as one Blueprint: the
@@ -982,6 +1003,68 @@ something else entirely, and would need more specifics to track down
 (is the backend being restarted or the database reseeded between the
 two sessions? are "this device" and "the other device" hitting the same
 backend, or two separate local instances?).
+
+## Fixed: two real correctness bugs — target-reached and post-match scoring
+
+A large set of features was requested together this round. Given the two
+items below were genuine correctness bugs undermining what was already
+shipped, they were prioritized and fully verified before anything else;
+the rest of the request is honestly scoped as not-yet-built below rather
+than rushed.
+
+- **A chase that already reached its target kept playing.** Confirmed:
+  `ScoringService`'s auto-complete check only looked at wickets-down and
+  overs-used, never at whether the chasing team's `total_runs` had
+  already met or passed `innings.target`. Fixed with one added condition.
+  **Verified with an exact scenario**: set up a 5-run target, scored a
+  six on the very first ball of the chase, confirmed via direct API
+  response that the innings immediately showed `is_completed: true` at
+  `total_balls: 1` (not 30) — and that the match correctly finalized with
+  `status: completed`, the correct winner, and an accurate margin
+  ("Won by 10 wicket(s)").
+- **Scoring didn't stop once a match was over.** Confirmed: the Scorer
+  page's `blocked` flag never checked `payload.is_completed` — every
+  button stayed clickable after the result was decided. Fixed properly,
+  not just disabled-and-greyed: the entire scoring control panel (run
+  buttons, extras, WICKET) is now removed from the page once the match
+  completes, replaced with a green "Match completed — {result}" banner
+  and the same Player of the Match / Highest Scorer / Best Bowler award
+  cards from Live Match Center, shown right there for the umpire.
+  **Verified**: loaded the Scorer for a completed match, confirmed zero
+  scoring buttons exist in the DOM (not just disabled) and the award
+  cards render correctly.
+- Also fixed a bug in the same area caught along the way: the "Over
+  complete, pick next bowler" prompt could incorrectly appear when a
+  match had simply *ended*, not when an over had actually completed —
+  the two conditions were sharing one `blocked` flag without being
+  distinguished in the banner logic.
+
+## Requested this round, not yet built — scoped honestly rather than rushed
+
+- **Single-player-remaining / configurable all-out threshold** — letting
+  a match specify fewer than 11 players per side (e.g. an 8-a-side
+  corporate game) so "all out" triggers at the correct wicket count
+  instead of the hardcoded 10. Needs a per-match or per-team squad-size
+  setting threaded through `ScoringService`'s completion check.
+- **Wagon wheel** — shot-direction recording per delivery (optional, as
+  requested) and an aggregated per-player visualization. Needs a new
+  data field on `Delivery` for shot angle/zone, an interactive field
+  diagram for the umpire to tap/draw on while scoring, and a rendering
+  component on Player Detail. Sized as its own multi-part feature, not
+  a quick addition.
+- **Delete a match + reset the ratings it contributed to** — needs
+  careful cascading cleanup (Deliveries → BattingPerformance/
+  BowlingPerformance → PlayerForm/PlayerRating snapshots →
+  TournamentStanding recompute), not a plain row delete, to avoid
+  leaving stale derived stats behind.
+- **Add an existing player to a team from the Players tab** — currently
+  "+ Add Player" only creates new players; assigning an already-existing
+  (possibly teamless, possibly on another team) player needs its own flow.
+- **Player Detail showing complete career stats regardless of current
+  team** — not yet independently verified this round whether this is
+  already correct (Player's rating/stats fields are career-wide by
+  design) or has a real filtering bug; needs to actually be checked
+  against a player who's changed teams before claiming either way.
 
 ## Added: match-completion awards — Player of the Match, highest scorer, best bowler
 

@@ -148,11 +148,15 @@ class ScoringService:
 
         self.db.flush()
 
-        # Auto-complete innings on all-out or overs-complete
+        # Auto-complete innings on all-out, overs-complete, or (2nd innings
+        # only) the chasing team reaching their target — a chase that's
+        # already been won should end immediately, not keep playing out
+        # the rest of the overs/wickets.
         match: Match = self.db.get(Match, innings.match_id)
         max_wickets = 10
         max_balls = match.overs_limit * 6
-        if innings.total_wickets >= max_wickets or innings.total_balls >= max_balls:
+        target_reached = innings.target is not None and innings.total_runs >= innings.target
+        if innings.total_wickets >= max_wickets or innings.total_balls >= max_balls or target_reached:
             self.complete_innings(innings.id)
 
         return delivery

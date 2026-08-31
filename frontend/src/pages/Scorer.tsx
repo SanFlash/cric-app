@@ -8,6 +8,8 @@ import { BallAnimation } from "../components/BallAnimation";
 import { NowPlaying } from "../components/NowPlaying";
 import { UploadedImage } from "../components/UploadedImage";
 import { ChaseBanner } from "../components/ChaseBanner";
+import { MatchSummaryCard } from "../components/MatchSummaryCard";
+import type { MatchSummaryOut } from "../api/client";
 import { computeChaseSummary } from "../utils/chase";
 
 const RUN_BUTTONS = [
@@ -89,6 +91,7 @@ export function Scorer() {
   const { matchId } = useParams();
   const id = Number(matchId);
   const [match, setMatch] = useState<MatchOut | null>(null);
+  const [summary, setSummary] = useState<MatchSummaryOut | null>(null);
   const [teams, setTeams] = useState<Record<number, TeamOut>>({});
   const [innings, setInnings] = useState<InningsOut[]>([]);
   const [battingRoster, setBattingRoster] = useState<PlayerOut[]>([]);
@@ -204,6 +207,14 @@ export function Scorer() {
     setNeedNewBatsman(null);
   }, [payload?.innings_id]);
 
+  // Match just completed (target reached, all out, or overs used up) —
+  // fetch the real awards computed from this match's actual performance
+  // data, same summary shown on Live Match Center.
+  useEffect(() => {
+    if (!id || !payload?.is_completed) return;
+    endpoints.matchSummary(id).then((r) => setSummary(r.data)).catch(() => setSummary(null));
+  }, [id, payload?.is_completed]);
+
   const currentInnings = innings.find((i) => !i.is_completed && i.total_balls > 0) ?? innings.find((i) => !i.is_completed) ?? innings[innings.length - 1];
 
   async function score(outcome: string, extra: Partial<{
@@ -294,7 +305,7 @@ export function Scorer() {
   const teamB = teams[match.team_b_id];
   const battingTeam = currentInnings ? teams[currentInnings.batting_team_id] : undefined;
   const bowlingTeam = currentInnings ? teams[currentInnings.bowling_team_id] : undefined;
-  const blocked = needNewBowler || needNewBatsman !== null;
+  const blocked = needNewBowler || needNewBatsman !== null || !!payload?.is_completed;
 
   return (
     <div>
@@ -329,6 +340,12 @@ export function Scorer() {
       {payload && (
         <>
           {match && chaseSummary && !payload?.is_completed && <ChaseBanner chase={chaseSummary} />}
+          {payload?.is_completed && match?.result_summary && (
+            <div className="mb-4 rounded-lg border px-4 py-3 text-sm font-medium" style={{ borderColor: "var(--color-win)", backgroundColor: "rgba(76,154,91,0.1)", color: "var(--color-win)" }}>
+              Match completed — {match.result_summary}
+            </div>
+          )}
+          {payload?.is_completed && summary && <MatchSummaryCard summary={summary} />}
           <div
             className="sticky top-[52px] z-20 mb-6 rounded-xl border p-4 sm:static sm:top-auto sm:z-auto sm:p-5"
             style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-950)" }}
@@ -390,7 +407,7 @@ export function Scorer() {
 
       {error && <div className="mb-4 text-sm" style={{ color: "var(--color-crimson)" }}>{error}</div>}
 
-      {blocked && (
+      {(needNewBowler || needNewBatsman !== null) && (
         <div
           className="mb-4 rounded-lg border px-4 py-3 text-sm"
           style={{ borderColor: "var(--color-amber-dim)", backgroundColor: "rgba(242,169,59,0.08)", color: "var(--color-cream)" }}
@@ -415,26 +432,30 @@ export function Scorer() {
         </div>
       )}
 
-      <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
-        {RUN_BUTTONS.map((b) => (
-          <Btn key={b.outcome} disabled={blocked} onClick={() => score(b.outcome)} color={b.outcome === "four" || b.outcome === "six" ? "var(--color-amber)" : "var(--color-pitch-700)"} textColor={b.outcome === "four" || b.outcome === "six" ? "var(--color-pitch-950)" : "var(--color-cream)"}>
-            {b.label}
-          </Btn>
-        ))}
-      </div>
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {EXTRA_BUTTONS.map((b) => (
-          <Btn key={b.outcome} disabled={blocked} onClick={() => score(b.outcome)}>{b.label}</Btn>
-        ))}
-      </div>
-      <button
-        onClick={() => setShowWicket(true)}
-        disabled={scoring || blocked}
-        className="w-full rounded-lg py-2 text-center text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-30 sm:py-3 sm:text-lg"
-        style={{ backgroundColor: "var(--color-crimson)", color: "white", fontFamily: "var(--font-mono)" }}
-      >
-        WICKET
-      </button>
+      {!payload?.is_completed && (
+        <>
+          <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {RUN_BUTTONS.map((b) => (
+              <Btn key={b.outcome} disabled={blocked} onClick={() => score(b.outcome)} color={b.outcome === "four" || b.outcome === "six" ? "var(--color-amber)" : "var(--color-pitch-700)"} textColor={b.outcome === "four" || b.outcome === "six" ? "var(--color-pitch-950)" : "var(--color-cream)"}>
+                {b.label}
+              </Btn>
+            ))}
+          </div>
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {EXTRA_BUTTONS.map((b) => (
+              <Btn key={b.outcome} disabled={blocked} onClick={() => score(b.outcome)}>{b.label}</Btn>
+            ))}
+          </div>
+          <button
+            onClick={() => setShowWicket(true)}
+            disabled={scoring || blocked}
+            className="w-full rounded-lg py-2 text-center text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-30 sm:py-3 sm:text-lg"
+            style={{ backgroundColor: "var(--color-crimson)", color: "white", fontFamily: "var(--font-mono)" }}
+          >
+            WICKET
+          </button>
+        </>
+      )}
 
       <AnimatePresence>
         {showWicket && (
