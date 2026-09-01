@@ -237,6 +237,7 @@ export const endpoints = {
   updateTeam: (id: number, payload: Partial<{ name: string; logo_url: string; coach_name: string }>) =>
     api.patch<TeamOut>(`/teams/${id}`, payload),
   deleteTeam: (id: number) => api.delete(`/teams/${id}`),
+  deleteMatch: (id: number) => api.delete<{ deleted: boolean; affected_players: number; tournament_rebuilt: boolean }>(`/matches/${id}`),
   createInvite: (teamId: number) => api.post<{ token: string; invite_url: string; expires_at: string }>(`/teams/${teamId}/invites`),
   getInvite: (token: string) => api.get<{ valid: boolean; team_name: string | null; team_id: number | null; reason: string | null }>(`/invites/${token}`),
   acceptInvite: (token: string, payload: { email: string; password: string; full_name: string; team_logo_url?: string }) =>

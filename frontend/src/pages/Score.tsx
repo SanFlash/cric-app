@@ -8,12 +8,16 @@ import { useAuth } from "../hooks/useAuth";
 export function Score() {
   const { user } = useAuth();
   const canScore = !!user && ["super_admin", "company_admin", "captain", "umpire"].includes(user.role);
+  const isAdmin = !!user && ["super_admin", "company_admin"].includes(user.role);
 
   const [matches, setMatches] = useState<MatchOut[]>([]);
   const [teams, setTeams] = useState<TeamOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [quickError, setQuickError] = useState<string | null>(null);
   const [quickStarting, setQuickStarting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<MatchOut | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [showNew, setShowNew] = useState(false);
   const [teamAId, setTeamAId] = useState<number | "">("");
@@ -194,6 +198,15 @@ export function Score() {
                   Score
                 </Link>
               )}
+              {isAdmin && (
+                <button
+                  onClick={() => { setConfirmDelete(m); setDeleteError(null); }}
+                  className="text-xs"
+                  style={{ color: "var(--color-crimson)" }}
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </motion.div>
         ))}
@@ -201,6 +214,61 @@ export function Score() {
           <div className="text-sm" style={{ color: "var(--color-cream-faint)" }}>No matches yet.</div>
         )}
       </div>
+
+      {deleteError && (
+        <div className="mt-4 rounded-lg border px-4 py-3 text-sm" style={{ borderColor: "var(--color-crimson)", backgroundColor: "rgba(193,39,45,0.08)", color: "var(--color-crimson)" }}>
+          {deleteError}
+        </div>
+      )}
+
+      <Modal open={confirmDelete !== null} onClose={() => setConfirmDelete(null)} title="Delete this match?">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm" style={{ color: "var(--color-cream-dim)" }}>
+            This permanently deletes{" "}
+            <b style={{ color: "var(--color-cream)" }}>
+              {confirmDelete && `${teamById[confirmDelete.team_a_id]?.name ?? "Team A"} vs ${teamById[confirmDelete.team_b_id]?.name ?? "Team B"}`}
+            </b>
+            {" "}— every ball bowled, both innings, and any predictions. Every player who played
+            in it has their career stats and rating recomputed to correctly exclude it, and if
+            this was a tournament fixture, that tournament's whole standings table is rebuilt from
+            its remaining matches. <b style={{ color: "var(--color-crimson)" }}>This cannot be undone.</b>
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="flex-1 rounded-md px-4 py-2 text-sm font-medium"
+              style={{ backgroundColor: "var(--color-pitch-700)", color: "var(--color-cream)" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                if (!confirmDelete) return;
+                setDeleting(true);
+                try {
+                  await endpoints.deleteMatch(confirmDelete.id);
+                  setConfirmDelete(null);
+                  load();
+                } catch (e: unknown) {
+                  const message =
+                    e && typeof e === "object" && "response" in e
+                      ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail
+                      : undefined;
+                  setDeleteError(message ?? "Failed to delete match.");
+                  setConfirmDelete(null);
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+              disabled={deleting}
+              className="flex-1 rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: "var(--color-crimson)", color: "white" }}
+            >
+              {deleting ? "Deleting…" : "Delete Match"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal open={showNew} onClose={() => setShowNew(false)} title="New Match">
         <div className="flex flex-col gap-4">

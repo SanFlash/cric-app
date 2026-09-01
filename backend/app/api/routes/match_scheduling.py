@@ -169,3 +169,28 @@ def get_match_roster(match_id: int, team_id: int, db: Session = Depends(get_db))
         players = db.query(Player).filter(Player.team_id == team_id, Player.is_deleted.is_(False)).all()
 
     return {"squad_scoped": squad_id is not None, "squad_id": squad_id, "player_ids": [p.id for p in players]}
+
+
+@router.delete(
+    "/{match_id}",
+    status_code=200,
+    dependencies=[Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN))],
+)
+def delete_match(match_id: int, db: Session = Depends(get_db)):
+    """
+    Permanently deletes a match and everything derived from it — every
+    delivery, both innings, per-match performance rows, any predictions —
+    then recomputes career stats/ratings for every player who played in
+    it, and rebuilds tournament standings from the matches that remain,
+    so nothing is left over-counting a match that no longer exists.
+    Deliberately restricted to admins, not captains/umpires — this is
+    irreversible and rewrites real historical numbers, unlike everything
+    else in the scoring flow which only ever adds data.
+    """
+    from app.services.match_deletion_service import MatchDeletionService
+
+    try:
+        result = MatchDeletionService(db).delete_match(match_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {"deleted": True, **result}

@@ -1004,6 +1004,64 @@ something else entirely, and would need more specifics to track down
 two sessions? are "this device" and "the other device" hitting the same
 backend, or two separate local instances?).
 
+## Added: delete a match, with a full correctness reset (not a soft hide)
+
+A genuinely destructive, admin-only feature — deleting a match doesn't
+just remove the row, it correctly unwinds everything derived from it.
+New `MatchDeletionService`:
+
+1. Deletes the match's deliveries, both innings, per-match performance
+   rows, predictions, and any achievements awarded specifically for it.
+2. For every player who played in it, **recomputes their career stats
+   and rating from scratch** off whatever performance rows remain — not
+   by subtracting numbers (error-prone), the same re-aggregation
+   `StatisticsEngine`/`RatingEngine` already do elsewhere.
+3. If it was a tournament fixture, **rebuilds that tournament's entire
+   standings table** by replaying every other completed match in
+   chronological order — standings only ever accumulate
+   (`TournamentService.update_after_match` has no subtract path), so a
+   clean undo means starting over and replaying what's left, not
+   reversing arithmetic.
+
+**Verified with real before/after numbers, not just "no errors":**
+scored a real match, confirmed a player showed 24 runs and a specific
+rating; deleted it via direct API call; confirmed runs and matches-played
+both correctly dropped to 0. Separately verified the tournament path:
+two completed matches in a tournament showed `played: 2` for both teams;
+deleted one; standings correctly rebuilt to `played: 1` with points
+halved — genuinely recomputed, not a broken incremental subtraction.
+
+**Two real bugs found from that verification, both fixed before calling
+this done:**
+
+- **A stale achievement kept showing after its match was deleted**
+  ("Hit 3 sixes in an innings" survived on a player's profile with zero
+  runs recorded). `Achievement` rows weren't being cleaned up. Fixed —
+  now correctly falls back to "No achievements yet."
+- **A player's overall rating went UP after their only match was
+  deleted** (83 → 90, despite dropping to zero batting/bowling data).
+  Traced the exact cause: `PlayerForm` snapshots are tied to a specific
+  match ("form as of this match") and `RatingEngine` reads whichever is
+  newest — deleting a player's only match left a stale 100-form snapshot
+  as still "newest," which then dominated the weighted average once
+  batting/bowling correctly dropped out of it entirely. Fixed by
+  clearing every form snapshot for affected players and rebuilding one
+  fresh snapshot from whichever match they most recently actually
+  played, if any remain. Re-verified: the same player's rating now
+  correctly shows **50** (the honest neutral baseline for zero
+  performance history) instead of an inflated stale-data artifact.
+
+Screenshotted the complete real flow end to end: a player's genuine
+before-state (47 runs, rating 83, an earned achievement) → the Score
+page's Delete button → a confirmation modal naming the exact match and
+spelling out the full consequences → the match gone from the list → the
+same player's profile now honestly at 0 runs, rating 50, no
+achievements. First screenshot pass actually deleted the wrong match
+(a test-script targeting mistake, not an app bug — confirmed by reading
+the confirmation modal's own text, which correctly named whatever was
+clicked) — caught by checking the actual screenshots rather than trusting
+a script's exit code, redone correctly.
+
 ## Fixed: two real correctness bugs — target-reached and post-match scoring
 
 A large set of features was requested together this round. Given the two
@@ -1116,7 +1174,7 @@ debugging, not a straight line to working:**
    run(s)." Fixed by suppressing `ChaseBanner` once `is_completed` is
    true, on both Scorer and Live Match.
 
-
+## Added: new-batsman-required on wicket, retired hurt, chase summary, resilient images
 
 - **New batsman required after a wicket.** Mirrors the existing
   over-completion bowler prompt: when a wicket comes through the WS
