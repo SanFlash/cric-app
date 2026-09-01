@@ -76,6 +76,7 @@ async def score_delivery(payload: DeliveryIn, db: Session = Depends(get_db), use
 
     payload_out["event"] = {
         "delivery_id": delivery.id,
+        "innings_id": delivery.innings_id,
         "outcome": delivery.outcome.value,
         "is_wicket": delivery.is_wicket,
         "dismissal_type": delivery.dismissal_type.value if delivery.dismissal_type else None,

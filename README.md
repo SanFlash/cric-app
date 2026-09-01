@@ -1004,6 +1004,51 @@ something else entirely, and would need more specifics to track down
 two sessions? are "this device" and "the other device" hitting the same
 backend, or two separate local instances?).
 
+## Fixed: 2nd innings genuinely couldn't be scored — the actual root cause
+
+Reported directly: after innings 1 finished, no scoring buttons appeared
+for innings 2 at all — scoring was completely stuck. Real, severe
+regression, tracked down properly rather than patched at the symptom.
+
+**Layer 1 (the immediate cause).** The Scorer's "stop scoring once the
+match is done" logic (added the same round as the match-completion
+awards feature) used `payload.is_completed` — but that field reflects
+whether the **current innings** just ended, not the whole match. The
+instant innings 1 completed, this flipped true and permanently blocked
+scoring — and nothing could ever flip it back, since no new delivery
+(the only thing that updates it) could be scored while blocked. A
+complete deadlock. Fixed by switching every "is the match actually over"
+check to `match.status === "completed"` instead, which is correctly
+refreshed after every ball via the existing `load()` call — kept
+`payload.is_completed` only where it's genuinely about the current
+innings (the wicket/new-batsman prompt logic, which was already correct).
+
+**Layer 2 (found while re-verifying Layer 1, a real backend bug).** With
+Layer 1 fixed, scoring buttons appeared — but the `NowPlaying` bar showed
+the *wrong teams'* players still "at the crease" for the fresh innings.
+Traced to the actual WebSocket snapshot itself, not a frontend display
+bug: `_current_snapshot`'s innings-picking query only ever asked "does
+this innings have any balls bowled?" — with no case for "that innings is
+now complete, move to the next one." Once innings 1 finished, the
+snapshot kept reporting innings 1 forever, since a fresh 0-ball innings 2
+never satisfied its `total_balls > 0` filter. Rewrote the picking logic
+to prioritize correctly: an innings actively in progress, then any
+innings that isn't finished yet (even at zero balls — this is what makes
+the transition work), only falling back to "the last one" once
+everything's actually done. Now matches the equivalent logic that was
+already correct on the frontend.
+
+**Verified with the full real chain, not just the isolated fix:**
+inspected the raw WebSocket snapshot directly before and after (confirmed
+`innings_id` genuinely switched from the stale 1 to the correct 2, with
+`current_players: null` for the fresh innings rather than a cross-team
+mismatch), then played an actual ball through the real UI — a boundary
+that also happened to reach the next target, producing one screenshot
+that confirms every fix from this session working together: the correct
+players "at the crease," the FOUR! animation, the match completing
+immediately on target reached, and the full award-card summary replacing
+the scoring panel.
+
 ## Added: delete a match, with a full correctness reset (not a soft hide)
 
 A genuinely destructive, admin-only feature — deleting a match doesn't

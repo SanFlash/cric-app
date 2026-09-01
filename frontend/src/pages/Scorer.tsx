@@ -210,10 +210,22 @@ export function Scorer() {
   // Match just completed (target reached, all out, or overs used up) —
   // fetch the real awards computed from this match's actual performance
   // data, same summary shown on Live Match Center.
+  //
+  // Deliberately checks match.status, not payload.is_completed: the WS
+  // payload's is_completed reflects whether the CURRENT INNINGS just
+  // ended, not the whole match. After innings 1 completes in a normal
+  // 2-innings match, payload.is_completed correctly flips true — but
+  // nothing about the match is actually over, and no new WS message will
+  // ever arrive to flip it back for innings 2 (no delivery has been
+  // scored yet to broadcast one). Using it here would leave the summary
+  // fetch — and worse, the "stop scoring" logic below — permanently
+  // stuck after innings 1, blocking innings 2 from ever being scored.
+  // match.status is refreshed via load() after every ball and correctly
+  // reflects the real match state.
   useEffect(() => {
-    if (!id || !payload?.is_completed) return;
+    if (!id || match?.status !== "completed") return;
     endpoints.matchSummary(id).then((r) => setSummary(r.data)).catch(() => setSummary(null));
-  }, [id, payload?.is_completed]);
+  }, [id, match?.status]);
 
   const currentInnings = innings.find((i) => !i.is_completed && i.total_balls > 0) ?? innings.find((i) => !i.is_completed) ?? innings[innings.length - 1];
 
@@ -305,7 +317,7 @@ export function Scorer() {
   const teamB = teams[match.team_b_id];
   const battingTeam = currentInnings ? teams[currentInnings.batting_team_id] : undefined;
   const bowlingTeam = currentInnings ? teams[currentInnings.bowling_team_id] : undefined;
-  const blocked = needNewBowler || needNewBatsman !== null || !!payload?.is_completed;
+  const blocked = needNewBowler || needNewBatsman !== null || match?.status === "completed";
 
   return (
     <div>
@@ -329,23 +341,37 @@ export function Scorer() {
         {teamB && <UploadedImage src={teamB.logo_url} name={teamB.name} size={40} shape="square" />}
       </motion.div>
 
-      {payload?.event && <BallAnimation key={payload.event.delivery_id} event={payload.event} />}
+      {payload?.event && payload.event.innings_id === payload.innings_id && (
+        <BallAnimation key={payload.event.delivery_id} event={payload.event} />
+      )}
 
-      <NowPlaying
-        striker={payload?.event?.current_striker ?? payload?.current_players?.striker}
-        nonStriker={payload?.event?.current_non_striker ?? payload?.current_players?.non_striker}
-        bowler={payload?.event?.bowler ?? payload?.current_players?.bowler}
-      />
+      {(() => {
+        // Only trust payload.event for "who's playing right now" when it
+        // actually belongs to the innings being displayed — otherwise
+        // it's the last delivery from a PREVIOUS innings that hasn't been
+        // superseded by a new WS message yet (nothing happens to trigger
+        // one until the next ball is bowled), and would show the wrong
+        // team's players still "at the crease" for a fresh innings.
+        const eventIsCurrent = payload?.event?.innings_id === payload?.innings_id;
+        const liveEvent = eventIsCurrent ? payload?.event : undefined;
+        return (
+          <NowPlaying
+            striker={liveEvent?.current_striker ?? payload?.current_players?.striker}
+            nonStriker={liveEvent?.current_non_striker ?? payload?.current_players?.non_striker}
+            bowler={liveEvent?.bowler ?? payload?.current_players?.bowler}
+          />
+        );
+      })()}
 
       {payload && (
         <>
-          {match && chaseSummary && !payload?.is_completed && <ChaseBanner chase={chaseSummary} />}
-          {payload?.is_completed && match?.result_summary && (
+          {match && chaseSummary && match?.status !== "completed" && <ChaseBanner chase={chaseSummary} />}
+          {match?.status === "completed" && match?.result_summary && (
             <div className="mb-4 rounded-lg border px-4 py-3 text-sm font-medium" style={{ borderColor: "var(--color-win)", backgroundColor: "rgba(76,154,91,0.1)", color: "var(--color-win)" }}>
               Match completed — {match.result_summary}
             </div>
           )}
-          {payload?.is_completed && summary && <MatchSummaryCard summary={summary} />}
+          {match?.status === "completed" && summary && <MatchSummaryCard summary={summary} />}
           <div
             className="sticky top-[52px] z-20 mb-6 rounded-xl border p-4 sm:static sm:top-auto sm:z-auto sm:p-5"
             style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-950)" }}
@@ -432,7 +458,7 @@ export function Scorer() {
         </div>
       )}
 
-      {!payload?.is_completed && (
+      {match?.status !== "completed" && (
         <>
           <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
             {RUN_BUTTONS.map((b) => (

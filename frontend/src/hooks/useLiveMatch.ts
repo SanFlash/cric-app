@@ -24,6 +24,7 @@ export interface LiveScoreboardPayload {
   };
   event?: {
     delivery_id: number;
+    innings_id: number;
     outcome: string;
     is_wicket: boolean;
     dismissal_type: string | null;

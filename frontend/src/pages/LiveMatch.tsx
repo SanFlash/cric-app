@@ -37,10 +37,14 @@ export function LiveMatch() {
         setTeamB(b.data);
       });
     }).catch(() => setMatch(null));
-    if (payload?.is_completed) {
+    // Checks match.status, not payload.is_completed — see the identical
+    // note in Scorer.tsx. payload.is_completed reflects the CURRENT
+    // INNINGS, not the whole match, so using it here would show a
+    // misleading "Completed" state after just innings 1 finishes.
+    if (match?.status === "completed") {
       endpoints.matchSummary(matchId).then((r) => setSummary(r.data)).catch(() => setSummary(null));
     }
-  }, [matchId, payload?.score, payload?.is_completed]); // refetch when the score changes, or the match completes
+  }, [matchId, payload?.score, match?.status]); // refetch when the score changes, or the match completes
 
   return (
     <div>
@@ -116,11 +120,11 @@ export function LiveMatch() {
                 <span
                   className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest"
                   style={{
-                    backgroundColor: payload.is_completed ? "var(--color-win-dim)" : "rgba(193,39,45,0.15)",
-                    color: payload.is_completed ? "var(--color-win)" : "var(--color-crimson)",
+                    backgroundColor: match?.status === "completed" ? "var(--color-win-dim)" : "rgba(193,39,45,0.15)",
+                    color: match?.status === "completed" ? "var(--color-win)" : "var(--color-crimson)",
                   }}
                 >
-                  {payload.is_completed ? "Completed" : "● Live"}
+                  {match?.status === "completed" ? "Completed" : "● Live"}
                 </span>
                 {teamB && <UploadedImage src={teamB.logo_url} name={teamB.name} size={24} shape="square" />}
               </div>
@@ -129,23 +133,31 @@ export function LiveMatch() {
               </span>
             </div>
 
-            {payload.is_completed && match?.result_summary && (
+            {match?.status === "completed" && match?.result_summary && (
               <div className="mb-4 text-sm font-medium" style={{ color: "var(--color-win)" }}>
                 {match.result_summary}
               </div>
             )}
 
-            {payload.is_completed && summary && <MatchSummaryCard summary={summary} />}
+            {match?.status === "completed" && summary && <MatchSummaryCard summary={summary} />}
 
-            {payload.event && <BallAnimation key={payload.event.delivery_id} event={payload.event} />}
+            {payload.event && payload.event.innings_id === payload.innings_id && (
+              <BallAnimation key={payload.event.delivery_id} event={payload.event} />
+            )}
 
-            <NowPlaying
-              striker={payload.event?.current_striker ?? payload.current_players?.striker}
-              nonStriker={payload.event?.current_non_striker ?? payload.current_players?.non_striker}
-              bowler={payload.event?.bowler ?? payload.current_players?.bowler}
-            />
+            {(() => {
+              const eventIsCurrent = payload.event?.innings_id === payload.innings_id;
+              const liveEvent = eventIsCurrent ? payload.event : undefined;
+              return (
+                <NowPlaying
+                  striker={liveEvent?.current_striker ?? payload.current_players?.striker}
+                  nonStriker={liveEvent?.current_non_striker ?? payload.current_players?.non_striker}
+                  bowler={liveEvent?.bowler ?? payload.current_players?.bowler}
+                />
+              );
+            })()}
 
-            {match && chaseSummary && !payload.is_completed && <ChaseBanner chase={chaseSummary} />}
+            {match && chaseSummary && match?.status !== "completed" && <ChaseBanner chase={chaseSummary} />}
 
             <div className="mb-2">
               <ScoreboardValue value={payload.score} size="text-7xl" />

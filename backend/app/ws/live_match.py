@@ -38,28 +38,42 @@ manager = ConnectionManager()
 
 
 def _current_snapshot(db: Session, match_id: int) -> dict | None:
-    """The innings actually in progress for `match_id`, or None if scoring
-    hasn't started yet. Both innings rows exist from the moment a match
-    starts (so the 2nd innings' target can be set later), so picking simply
-    by highest innings_number would show an empty not-yet-started 2nd
-    innings while the 1st is still live. Instead: prefer the highest-numbered
-    innings that actually has deliveries recorded; only fall back to the
-    plain highest-numbered row if nothing has started yet."""
-    innings = (
+    """The innings actually in progress for `match_id`, or None if the
+    match has no innings rows at all. Both innings rows exist from the
+    moment a match starts (so the 2nd innings' target can be set later),
+    so this needs to correctly distinguish three states, in priority
+    order:
+    1. An innings that's actively being scored (not completed, has
+       balls) — the normal mid-innings case.
+    2. An innings that hasn't been completed yet, even with zero balls —
+       this is what makes the transition into a new innings work. The
+       previous version of this function only handled "some innings has
+       balls" vs "nothing has started anywhere," and had no case for
+       "the one with balls is now COMPLETE, move to the next one" — so
+       once innings 1 finished, this kept reporting innings 1 forever,
+       and the 2nd innings could never be scored at all (its snapshot
+       showed innings 1's stale, completed state indefinitely, since
+       nothing about a fresh 0-ball innings 2 ever satisfied the old
+       `total_balls > 0` filter).
+    3. Fallback: the last innings by number, for a fully-completed match
+       or any other edge case.
+    Mirrors the equivalent picking logic on the frontend (Scorer.tsx's
+    `load()`) so both agree on which innings is "current."
+    """
+    all_innings = (
         db.query(Innings)
-        .filter(Innings.match_id == match_id, Innings.total_balls > 0)
-        .order_by(Innings.innings_number.desc())
-        .first()
+        .filter(Innings.match_id == match_id)
+        .order_by(Innings.innings_number.asc())
+        .all()
     )
-    if innings is None:
-        innings = (
-            db.query(Innings)
-            .filter(Innings.match_id == match_id)
-            .order_by(Innings.innings_number.asc())
-            .first()
-        )
-    if innings is None:
+    if not all_innings:
         return None
+
+    innings = next((i for i in all_innings if not i.is_completed and i.total_balls > 0), None)
+    if innings is None:
+        innings = next((i for i in all_innings if not i.is_completed), None)
+    if innings is None:
+        innings = all_innings[-1]
 
     def _player_brief(player_id: int | None) -> dict | None:
         if player_id is None:
