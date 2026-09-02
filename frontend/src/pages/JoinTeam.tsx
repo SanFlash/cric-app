@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { endpoints } from "../api/client";
 import { ImageUpload } from "../components/ImageUpload";
+import logo from "../assets/logo.png";
 
 export function JoinTeam() {
   const { token } = useParams();
@@ -76,12 +77,7 @@ export function JoinTeam() {
         style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.7)" }}
       >
         <div className="mb-6 flex items-center gap-2">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-bold"
-            style={{ backgroundColor: "var(--color-amber)", color: "var(--color-pitch-950)", fontFamily: "var(--font-display)" }}
-          >
-            CC
-          </div>
+          <img src={logo} alt="CorpCric" className="h-9 w-9 rounded-full object-cover" style={{ boxShadow: "0 0 0 1px var(--color-amber-dim)" }} />
           <span className="font-display text-lg font-semibold" style={{ fontFamily: "var(--font-display)", color: "var(--color-cream)" }}>
             CorpCric
           </span>

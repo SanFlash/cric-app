@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLiveMatch } from "../hooks/useLiveMatch";
 import { ScoreboardValue } from "../components/Scoreboard";
@@ -16,7 +16,7 @@ import { endpoints, type PredictionOut, type MatchOut, type TeamOut, type MatchS
 
 export function LiveMatch() {
   const { matchId: matchIdParam } = useParams();
-  const [matchIdInput, setMatchIdInput] = useState(matchIdParam ?? "1");
+  const navigate = useNavigate();
   const [matchId, setMatchId] = useState<number | null>(matchIdParam ? Number(matchIdParam) : null);
   const { payload, connected } = useLiveMatch(matchId);
   const [prediction, setPrediction] = useState<PredictionOut | null>(null);
@@ -25,11 +25,39 @@ export function LiveMatch() {
   const [teamA, setTeamA] = useState<TeamOut | null>(null);
   const [teamB, setTeamB] = useState<TeamOut | null>(null);
   const [summary, setSummary] = useState<MatchSummaryOut | null>(null);
+  const [allMatches, setAllMatches] = useState<MatchOut[]>([]);
+  const [teamsById, setTeamsById] = useState<Record<number, TeamOut>>({});
+  const [matchesLoading, setMatchesLoading] = useState(true);
   const chaseSummary = payload && match ? computeChaseSummary(payload.score, payload.overs, payload.target, match.overs_limit) : null;
+
+  // Powers the match-selector list: every match, teams for name lookups.
+  // Fetched once on mount, independent of whether a specific match is
+  // already selected — so the "← All matches" back-link always has
+  // fresh data to show, not just on first load.
+  useEffect(() => {
+    Promise.all([endpoints.matches(), endpoints.teams()]).then(([m, t]) => {
+      setAllMatches(m.data);
+      setTeamsById(Object.fromEntries(t.data.map((team) => [team.id, team])));
+      setMatchesLoading(false);
+    }).catch(() => setMatchesLoading(false));
+  }, []);
+
+  function selectMatch(id: number) {
+    setMatchId(id);
+    navigate(`/live/${id}`);
+  }
 
   useEffect(() => {
     if (matchId == null) return;
-    endpoints.latestPrediction(matchId).then((r) => setPrediction(r.data)).catch(() => setPrediction(null));
+    endpoints.latestPrediction(matchId).then((r) => setPrediction(r.data)).catch(() => {
+      // No prediction computed for this match yet — compute one now
+      // rather than leaving the win-probability meter empty. This is
+      // exactly what the Predictions page's "Compute" button does; doing
+      // it automatically here means a freshly-started match still shows
+      // a meter the first time someone watches it, not just after
+      // someone's separately visited Predictions and clicked compute.
+      endpoints.computePreMatchPrediction(matchId).then((r2) => setPrediction(r2.data)).catch(() => setPrediction(null));
+    });
     endpoints.momentum(matchId).then((r) => setMomentum(r.data)).catch(() => setMomentum([]));
     endpoints.match(matchId).then((r) => {
       setMatch(r.data);
@@ -59,27 +87,15 @@ export function LiveMatch() {
         </p>
       </motion.div>
 
-      <div className="mb-6 flex items-center gap-3">
-        <input
-          value={matchIdInput}
-          onChange={(e) => setMatchIdInput(e.target.value)}
-          placeholder="Match ID"
-          className="w-32 rounded-md border px-3 py-2 text-sm font-mono outline-none"
-          style={{
-            borderColor: "var(--color-pitch-line)",
-            backgroundColor: "var(--color-pitch-800)",
-            color: "var(--color-cream)",
-            fontFamily: "var(--font-mono)",
-          }}
-        />
-        <button
-          onClick={() => setMatchId(Number(matchIdInput))}
-          className="rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "var(--color-amber)", color: "var(--color-pitch-950)" }}
-        >
-          Watch match
-        </button>
-        {matchId != null && (
+      {matchId != null && (
+        <div className="mb-6 flex items-center gap-3">
+          <button
+            onClick={() => { setMatchId(null); navigate("/live"); }}
+            className="text-xs underline"
+            style={{ color: "var(--color-cream-faint)" }}
+          >
+            ← All matches
+          </button>
           <span className="flex items-center gap-2 text-xs" style={{ color: "var(--color-cream-faint)" }}>
             <span
               className={connected ? "live-dot" : ""}
@@ -93,11 +109,51 @@ export function LiveMatch() {
             />
             {connected ? "Connected" : "Disconnected"}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {matchId == null && (
-        <EmptyState message="Enter a match ID and press Watch to connect to its live scoreboard." />
+        <div className="mb-6">
+          {matchesLoading ? (
+            <div className="text-sm" style={{ color: "var(--color-cream-faint)" }}>Loading matches…</div>
+          ) : allMatches.length === 0 ? (
+            <EmptyState message="No matches yet — start one from Score a Match." />
+          ) : (
+            <div className="flex flex-col gap-2">
+              {[...allMatches]
+                .sort((a, b) => (a.status === "live" ? -1 : 0) - (b.status === "live" ? -1 : 0))
+                .map((m) => {
+                  const ta = teamsById[m.team_a_id];
+                  const tb = teamsById[m.team_b_id];
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => selectMatch(m.id)}
+                      className="flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors hover:border-[var(--color-amber-dim)]"
+                      style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}
+                    >
+                      <div className="flex items-center gap-3">
+                        {ta && <UploadedImage src={ta.logo_url} name={ta.name} size={28} shape="square" />}
+                        <span className="font-medium" style={{ color: "var(--color-cream)" }}>
+                          {ta?.name ?? "Team A"} vs {tb?.name ?? "Team B"}
+                        </span>
+                        {tb && <UploadedImage src={tb.logo_url} name={tb.name} size={28} shape="square" />}
+                      </div>
+                      <span
+                        className="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest"
+                        style={{
+                          backgroundColor: m.status === "live" ? "rgba(224,49,58,0.15)" : m.status === "completed" ? "var(--color-win-dim)" : "var(--color-pitch-700)",
+                          color: m.status === "live" ? "var(--color-crimson)" : m.status === "completed" ? "var(--color-win)" : "var(--color-cream-faint)",
+                        }}
+                      >
+                        {m.status === "live" ? "● Live" : m.status}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+        </div>
       )}
 
       {matchId != null && !payload && (

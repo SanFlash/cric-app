@@ -1004,6 +1004,64 @@ something else entirely, and would need more specifics to track down
 two sessions? are "this device" and "the other device" hitting the same
 backend, or two separate local instances?).
 
+## Added: a real match selector on Live Match Center
+
+Replaced a raw "type a numeric match ID" text input with an actual
+clickable list of matches — live ones sorted to the top with a red
+"● Live" badge, completed ones below with a green badge. Clicking a
+match navigates to `/live/{id}` (so direct links and sharing still work
+exactly as before) and shows a "← All matches" link to go back. This
+was a genuine gap: there was previously no way to discover which match
+IDs existed at all without already knowing them.
+
+**Win-probability meter**: already existed in the code, but could come
+up empty for a freshly-started match with no prediction computed yet.
+Fixed by automatically computing one the first time a match with no
+existing prediction is opened — the same computation the Predictions
+page's manual "Compute" button already does, just triggered
+automatically here so the meter reliably has something to show the
+first time anyone watches a match, not only after someone's separately
+visited Predictions first.
+
+**Verified end-to-end**, including a real false-alarm caught and
+corrected before reporting anything: an initial test check for the
+literal text "Win Probability" came back negative even though the meter
+was visibly rendering correctly with real percentages in the
+screenshot — traced to the same CSS-`uppercase`-vs-case-sensitive-
+assertion mismatch this project has hit before, not an actual bug.
+Confirmed with a case-insensitive check instead: real percentages, real
+team names, functioning bar, on both desktop and mobile (390px,
+including as the read-only Player role), zero console errors, zero
+mobile overflow.
+
+## Added: real branded logo, developer credit, and a real-vs-3D honesty check
+
+- **Logo**: the user's own uploaded artwork (a gold cricketer + stadium
+  circular badge) now replaces the plain "CC" text badge everywhere it
+  appeared — desktop sidebar, mobile top bar, Login page, Join Team
+  page. Optimized from the original 1.8MB upload down to ~100KB before
+  using it (resized to 256×256 — plenty for any badge/header context at
+  real display sizes), since serving a multi-megabyte image for a small
+  UI badge would have hurt load time, especially on mobile. Also fixed a
+  real oversight found while touching this: the browser tab title still
+  said the Vite default "frontend", and there was no real favicon — both
+  fixed using the same logo.
+- **Developer credit**: "Developed by Satyendra Namdeo" — small, in the
+  sidebar footer (both logged-in and logged-out states) and under the
+  Login form. Deliberately subtle, not a banner.
+- **Re-verified wicket-taking/scoring after the recent palette change**,
+  rather than assume nothing broke: scored a real wicket end-to-end and
+  confirmed the score incremented correctly, the dismissed player's slot
+  cleared, the new-batsman prompt appeared, scoring stayed correctly
+  blocked until a replacement was picked, and the OUT! animation played
+  — zero regressions found from the "Stadium Navy" palette change.
+- **On "3D animations"**: what's built is broadcast-style 2D animation
+  (SVG/CSS), not 3D. A genuine 3D battter/bowler animation pipeline needs
+  a fundamentally different toolset (a real 3D engine, actual rigged
+  models, real-time rendering) — not a styling change, a different
+  category of build. Told the user this directly rather than attempt an
+  unverifiable claim of "3D" using the existing 2D pipeline.
+
 ## Changed: full color palette — "Night Pitch" green+amber → "Stadium Navy" navy+cyan
 
 A genuine visual palette change, not a tweak, applied consistently across

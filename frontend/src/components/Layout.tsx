@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
+import logo from "../assets/logo.png";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: "◆" },
@@ -35,12 +36,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       <div className="mb-8 flex items-center gap-2">
-        <div
-          className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-bold"
-          style={{ backgroundColor: "var(--color-amber)", color: "var(--color-pitch-950)", fontFamily: "var(--font-display)" }}
-        >
-          CC
-        </div>
+        <img src={logo} alt="CorpCric" className="h-9 w-9 rounded-full object-cover" style={{ boxShadow: "0 0 0 1px var(--color-amber-dim)" }} />
         <span className="font-display text-lg font-semibold" style={{ fontFamily: "var(--font-display)", color: "var(--color-cream)" }}>
           CorpCric
         </span>
@@ -100,6 +96,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <button onClick={logout} className="text-[11px] underline" style={{ color: "var(--color-cream-faint)" }}>
               Log out
             </button>
+            <div className="mt-3 text-[9px]" style={{ color: "var(--color-cream-faint)", opacity: 0.6 }}>
+              Developed by Satyendra Namdeo
+            </div>
           </div>
         ) : (
           <div>
@@ -115,6 +114,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             >
               Log in
             </Link>
+            <div className="mt-3 text-[9px]" style={{ color: "var(--color-cream-faint)", opacity: 0.6 }}>
+              Developed by Satyendra Namdeo
+            </div>
           </div>
         )}
       </div>
@@ -135,12 +137,7 @@ export function Layout() {
         style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-950)" }}
       >
         <div className="flex items-center gap-2">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold"
-            style={{ backgroundColor: "var(--color-amber)", color: "var(--color-pitch-950)", fontFamily: "var(--font-display)" }}
-          >
-            CC
-          </div>
+          <img src={logo} alt="CorpCric" className="h-8 w-8 rounded-full object-cover" style={{ boxShadow: "0 0 0 1px var(--color-amber-dim)" }} />
           <span className="font-display text-base font-semibold" style={{ fontFamily: "var(--font-display)", color: "var(--color-cream)" }}>
             {activeItem?.label ?? "CorpCric"}
           </span>
