@@ -59,7 +59,7 @@ export function Leaderboards() {
         ))}
       </div>
 
-      <div className="rounded-xl border p-6" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}>
+      <div className="rounded-xl border p-6" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}>
         {loading && <div style={{ color: "var(--color-cream-faint)" }}>Loading…</div>}
         {!loading && entries.length === 0 && (
           <div style={{ color: "var(--color-cream-faint)" }}>No data for this metric yet.</div>

@@ -86,7 +86,7 @@ export function PlayerDetail() {
           ["Wickets", player.stats.bowl_wickets],
           ["Catches", player.stats.field_catches],
         ].map(([label, value]) => (
-          <div key={label as string} className="rounded-lg border px-4 py-3" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}>
+          <div key={label as string} className="rounded-lg border px-4 py-3" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}>
             <div className="font-mono text-2xl font-semibold" style={{ color: "var(--color-cream)", fontFamily: "var(--font-mono)" }}>
               {value}
             </div>
@@ -163,7 +163,7 @@ export function PlayerDetail() {
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}>
+    <div className="rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}>
       <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--color-cream-faint)" }}>
         {title}
       </h2>

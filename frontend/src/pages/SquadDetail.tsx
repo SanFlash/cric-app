@@ -114,7 +114,7 @@ export function SquadDetail() {
       </motion.div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}>
+        <div className="rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}>
           <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--color-cream-faint)" }}>
             Members ({squadPlayers.length})
           </h2>
@@ -200,7 +200,7 @@ export function SquadDetail() {
           </div>
         </div>
 
-        <div className="rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}>
+        <div className="rounded-xl border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--color-cream-faint)" }}>
               Recommended XI
@@ -230,7 +230,7 @@ export function SquadDetail() {
               {recommendation.warnings.length > 0 && (
                 <div
                   className="mb-3 rounded-md border px-3 py-2 text-xs"
-                  style={{ borderColor: "var(--color-crimson-dim)", backgroundColor: "rgba(193,39,45,0.08)", color: "var(--color-cream-dim)" }}
+                  style={{ borderColor: "var(--color-crimson-dim)", backgroundColor: "rgba(224,49,58,0.08)", color: "var(--color-cream-dim)" }}
                 >
                   {recommendation.warnings.map((w, i) => <div key={i}>⚠ {w}</div>)}
                 </div>

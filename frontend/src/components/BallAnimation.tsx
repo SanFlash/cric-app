@@ -44,7 +44,7 @@ export function BallAnimation({ event }: { event: BallEvent }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="pointer-events-none relative mb-4 overflow-hidden rounded-xl border"
-          style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(10,18,16,0.5)", height: 120 }}
+          style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(8,11,22,0.5)", height: 120 }}
         >
           {event.is_wicket && <WicketAnim label={event.dismissal_type ? DISMISSAL_LABELS[event.dismissal_type] : "OUT"} />}
           {!event.is_wicket && event.outcome === "six" && <SixAnim />}

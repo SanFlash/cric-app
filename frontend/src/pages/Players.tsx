@@ -56,7 +56,7 @@ export function Players() {
             <Link
               to={`/players/${p.id}`}
               className="block rounded-lg border p-4 transition-colors hover:border-[var(--color-amber-dim)]"
-              style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}
+              style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}
             >
               <div className="mb-1 flex items-start justify-between">
                 <span className="font-medium" style={{ color: "var(--color-cream)" }}>{p.full_name}</span>

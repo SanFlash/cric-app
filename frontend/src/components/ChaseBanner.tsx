@@ -10,7 +10,7 @@ export function ChaseBanner({ chase }: { chase: ChaseSummary }) {
       <motion.div
         initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
         className="mb-4 rounded-lg border px-4 py-2.5 text-sm font-semibold"
-        style={{ borderColor: "var(--color-win)", backgroundColor: "rgba(76,154,91,0.12)", color: "var(--color-win)" }}
+        style={{ borderColor: "var(--color-win)", backgroundColor: "rgba(52,196,113,0.12)", color: "var(--color-win)" }}
       >
         Target reached!
       </motion.div>
@@ -21,7 +21,7 @@ export function ChaseBanner({ chase }: { chase: ChaseSummary }) {
       <motion.div
         initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
         className="mb-4 rounded-lg border px-4 py-2.5 text-sm font-semibold"
-        style={{ borderColor: "var(--color-crimson)", backgroundColor: "rgba(193,39,45,0.1)", color: "var(--color-crimson)" }}
+        style={{ borderColor: "var(--color-crimson)", backgroundColor: "rgba(224,49,58,0.1)", color: "var(--color-crimson)" }}
       >
         Overs used up — {runsNeeded} run{runsNeeded === 1 ? "" : "s"} short.
       </motion.div>
@@ -32,7 +32,7 @@ export function ChaseBanner({ chase }: { chase: ChaseSummary }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
       className="mb-4 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg border px-4 py-2.5"
-      style={{ borderColor: "var(--color-amber-dim)", backgroundColor: "rgba(242,169,59,0.08)" }}
+      style={{ borderColor: "var(--color-amber-dim)", backgroundColor: "rgba(34,211,238,0.08)" }}
     >
       <span className="font-mono text-lg font-bold" style={{ color: "var(--color-amber)", fontFamily: "var(--font-mono)" }}>
         Need {runsNeeded}

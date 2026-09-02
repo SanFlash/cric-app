@@ -33,7 +33,7 @@ export function Modal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(10, 18, 16, 0.7)" }}
+          style={{ backgroundColor: "rgba(8, 11, 22, 0.7)" }}
           onClick={onClose}
         >
           <motion.div

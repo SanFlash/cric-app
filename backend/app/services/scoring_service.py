@@ -153,13 +153,48 @@ class ScoringService:
         # already been won should end immediately, not keep playing out
         # the rest of the overs/wickets.
         match: Match = self.db.get(Match, innings.match_id)
-        max_wickets = 10
+        max_wickets = self._max_wickets_for(match, innings)
         max_balls = match.overs_limit * 6
         target_reached = innings.target is not None and innings.total_runs >= innings.target
         if innings.total_wickets >= max_wickets or innings.total_balls >= max_balls or target_reached:
             self.complete_innings(innings.id)
 
         return delivery
+
+    def _max_wickets_for(self, match: Match, innings: Innings) -> int:
+        """
+        How many wickets end this innings — one fewer than the number of
+        players actually available to bat, not a hardcoded 10. Corporate/
+        casual cricket teams routinely field fewer than 11 (this app's
+        whole reason for existing), and a hardcoded 10 meant a 6-a-side
+        team's innings could never legally end via wickets at all — it
+        would just keep playing out every remaining over even after every
+        available batter was genuinely out, which is wrong, not just
+        untidy. Respects squad scoping when the match has one linked for
+        the batting team (only the players actually turning up for this
+        game), falling back to the full team roster otherwise — same
+        precedence the roster-selection endpoint already uses.
+        """
+        from app.models.org import Player, SquadPlayer
+
+        squad_id = match.squad_a_id if innings.batting_team_id == match.team_a_id else match.squad_b_id
+        if squad_id is not None:
+            available = (
+                self.db.query(SquadPlayer)
+                .filter(SquadPlayer.squad_id == squad_id, SquadPlayer.is_available.is_(True))
+                .count()
+            )
+        else:
+            available = (
+                self.db.query(Player)
+                .filter(Player.team_id == innings.batting_team_id, Player.is_deleted.is_(False))
+                .count()
+            )
+        # Never below 1, and never above the real cricket maximum of 10 —
+        # a large registered squad (reserves/substitutes beyond the actual
+        # XI) shouldn't inflate this past the standard cap; only a squad
+        # SMALLER than 11 should ever lower it below 10.
+        return max(1, min(10, available - 1))
 
     def correct_delivery(self, delivery_id: int, corrected: BallInput) -> Delivery:
         """Supersede a previously recorded delivery without deleting history,

@@ -13,7 +13,7 @@ function AwardCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-xl border p-4"
-      style={{ borderColor: "var(--color-amber-dim)", backgroundColor: "rgba(242,169,59,0.06)" }}
+      style={{ borderColor: "var(--color-amber-dim)", backgroundColor: "rgba(34,211,238,0.06)" }}
     >
       <div className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--color-amber)" }}>
         <span>{icon}</span>

@@ -264,7 +264,7 @@ export function TeamDetail() {
             <button
               onClick={() => { setConfirmDeleteTeam(true); setDeleteTeamError(null); }}
               className="rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "rgba(193,39,45,0.12)", color: "var(--color-crimson)" }}
+              style={{ backgroundColor: "rgba(224,49,58,0.12)", color: "var(--color-crimson)" }}
             >
               Delete Team
             </button>
@@ -287,7 +287,7 @@ export function TeamDetail() {
       </motion.div>
 
       {deleteTeamError && (
-        <div className="mb-4 rounded-lg border px-4 py-3 text-sm" style={{ borderColor: "var(--color-crimson)", backgroundColor: "rgba(193,39,45,0.08)", color: "var(--color-crimson)" }}>
+        <div className="mb-4 rounded-lg border px-4 py-3 text-sm" style={{ borderColor: "var(--color-crimson)", backgroundColor: "rgba(224,49,58,0.08)", color: "var(--color-crimson)" }}>
           {deleteTeamError}
         </div>
       )}
@@ -296,7 +296,7 @@ export function TeamDetail() {
         <span>Swipe table for runs, wickets, form &amp; rating</span>
         <span style={{ color: "var(--color-amber)" }}>→</span>
       </div>
-      <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}>
+      <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}>
         <div style={{ minWidth: canManageTeams ? 820 : 640 }}>
         <div
           className="grid grid-cols-12 gap-2 border-b px-5 py-3 text-xs uppercase tracking-widest"

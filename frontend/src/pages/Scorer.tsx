@@ -8,6 +8,7 @@ import { BallAnimation } from "../components/BallAnimation";
 import { NowPlaying } from "../components/NowPlaying";
 import { UploadedImage } from "../components/UploadedImage";
 import { ChaseBanner } from "../components/ChaseBanner";
+import { PitchGraphic } from "../components/PitchGraphic";
 import { MatchSummaryCard } from "../components/MatchSummaryCard";
 import type { MatchSummaryOut } from "../api/client";
 import { computeChaseSummary } from "../utils/chase";
@@ -367,15 +368,21 @@ export function Scorer() {
         <>
           {match && chaseSummary && match?.status !== "completed" && <ChaseBanner chase={chaseSummary} />}
           {match?.status === "completed" && match?.result_summary && (
-            <div className="mb-4 rounded-lg border px-4 py-3 text-sm font-medium" style={{ borderColor: "var(--color-win)", backgroundColor: "rgba(76,154,91,0.1)", color: "var(--color-win)" }}>
+            <div className="mb-4 rounded-lg border px-4 py-3 text-sm font-medium" style={{ borderColor: "var(--color-win)", backgroundColor: "rgba(52,196,113,0.1)", color: "var(--color-win)" }}>
               Match completed — {match.result_summary}
             </div>
           )}
           {match?.status === "completed" && summary && <MatchSummaryCard summary={summary} />}
           <div
-            className="sticky top-[52px] z-20 mb-6 rounded-xl border p-4 sm:static sm:top-auto sm:z-auto sm:p-5"
-            style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-950)" }}
+            className="sticky top-[52px] z-20 mb-6 overflow-hidden rounded-xl border p-4 sm:static sm:top-auto sm:z-auto sm:p-5"
+            style={{
+              borderColor: "var(--color-amber-dim)",
+              background: "linear-gradient(160deg, var(--color-pitch-950) 0%, var(--color-pitch-900) 60%, rgba(34,211,238,0.05) 100%)",
+              position: "relative",
+            }}
           >
+            <PitchGraphic />
+            <div className="relative">
             <ScoreboardValue value={payload.score} size="text-4xl sm:text-5xl" />
           <div className="mt-2 flex gap-4 font-mono text-sm" style={{ color: "var(--color-cream-dim)", fontFamily: "var(--font-mono)" }}>
             <span>Overs {payload.overs}</span>
@@ -400,6 +407,7 @@ export function Scorer() {
                 {b}
               </span>
             ))}
+          </div>
           </div>
           </div>
         </>
@@ -436,7 +444,7 @@ export function Scorer() {
       {(needNewBowler || needNewBatsman !== null) && (
         <div
           className="mb-4 rounded-lg border px-4 py-3 text-sm"
-          style={{ borderColor: "var(--color-amber-dim)", backgroundColor: "rgba(242,169,59,0.08)", color: "var(--color-cream)" }}
+          style={{ borderColor: "var(--color-amber-dim)", backgroundColor: "rgba(34,211,238,0.08)", color: "var(--color-cream)" }}
         >
           {needNewBatsman !== null ? (
             <>
@@ -488,7 +496,7 @@ export function Scorer() {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ backgroundColor: "rgba(10,18,16,0.7)" }}
+            style={{ backgroundColor: "rgba(8,11,22,0.7)" }}
             onClick={() => setShowWicket(false)}
           >
             <motion.div

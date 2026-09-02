@@ -154,7 +154,7 @@ export function Score() {
       {!canScore && user && (
         <div
           className="mb-6 rounded-lg border px-4 py-3 text-sm"
-          style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)", color: "var(--color-cream-faint)" }}
+          style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)", color: "var(--color-cream-faint)" }}
         >
           Your role ({user.role}) can watch matches live but not score them. Company Admins,
           Captains, and Umpires can start and score matches.
@@ -171,7 +171,7 @@ export function Score() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
             className="flex flex-col gap-3 rounded-lg border px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
-            style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}
+            style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}
           >
             <div>
               <div style={{ color: "var(--color-cream)" }}>
@@ -216,7 +216,7 @@ export function Score() {
       </div>
 
       {deleteError && (
-        <div className="mt-4 rounded-lg border px-4 py-3 text-sm" style={{ borderColor: "var(--color-crimson)", backgroundColor: "rgba(193,39,45,0.08)", color: "var(--color-crimson)" }}>
+        <div className="mt-4 rounded-lg border px-4 py-3 text-sm" style={{ borderColor: "var(--color-crimson)", backgroundColor: "rgba(224,49,58,0.08)", color: "var(--color-crimson)" }}>
           {deleteError}
         </div>
       )}

@@ -87,7 +87,7 @@ export function Squads() {
             <Link
               to={`/squads/${s.id}`}
               className="block rounded-xl border p-5 transition-colors hover:border-[var(--color-amber-dim)]"
-              style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}
+              style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}
             >
               <div className="mb-2 flex items-center gap-2">
                 <UploadedImage src={teamById[s.team_id]?.logo_url} name={teamById[s.team_id]?.name ?? `Team ${s.team_id}`} size={24} shape="square" />

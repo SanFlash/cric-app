@@ -60,7 +60,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             }
             style={({ isActive }: { isActive: boolean }) => ({
               color: isActive ? "var(--color-amber)" : "var(--color-cream-dim)",
-              backgroundColor: isActive ? "rgba(242, 169, 59, 0.08)" : "transparent",
+              backgroundColor: isActive ? "rgba(34, 211, 238, 0.08)" : "transparent",
             })}
           >
             <span style={{ fontSize: 10 }}>{item.icon}</span>
@@ -163,7 +163,7 @@ export function Layout() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 md:hidden"
-            style={{ backgroundColor: "rgba(10,18,16,0.7)" }}
+            style={{ backgroundColor: "rgba(8,11,22,0.7)" }}
             onClick={() => setDrawerOpen(false)}
           >
             <motion.aside
@@ -184,7 +184,7 @@ export function Layout() {
       {/* Desktop sidebar — hidden below md */}
       <aside
         className="hidden w-60 flex-shrink-0 flex-col border-r px-5 py-6 md:flex"
-        style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(10, 18, 16, 0.6)" }}
+        style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(8, 11, 22, 0.6)" }}
       >
         <SidebarContent />
       </aside>

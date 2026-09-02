@@ -48,7 +48,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay }}
       className="rounded-lg border border-pitch-line bg-pitch-800/60 px-5 py-4"
-      style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19, 28, 24, 0.6)" }}
+      style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16, 21, 42, 0.6)" }}
     >
       <div
         className="font-mono text-3xl font-semibold tracking-tight"

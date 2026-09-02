@@ -9,6 +9,7 @@ import { BallAnimation } from "../components/BallAnimation";
 import { NowPlaying } from "../components/NowPlaying";
 import { UploadedImage } from "../components/UploadedImage";
 import { ChaseBanner } from "../components/ChaseBanner";
+import { PitchGraphic } from "../components/PitchGraphic";
 import { computeChaseSummary } from "../utils/chase";
 import { MatchSummaryCard } from "../components/MatchSummaryCard";
 import { endpoints, type PredictionOut, type MatchOut, type TeamOut, type MatchSummaryOut } from "../api/client";
@@ -108,19 +109,22 @@ export function LiveMatch() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border p-8"
+            className="overflow-hidden rounded-xl border p-8"
             style={{
-              borderColor: "var(--color-pitch-line)",
-              background: "linear-gradient(180deg, rgba(19,28,24,0.9), rgba(14,21,18,0.9))",
+              borderColor: "var(--color-amber-dim)",
+              background: "linear-gradient(160deg, rgba(16,21,42,0.95) 0%, rgba(12,16,32,0.95) 55%, rgba(34,211,238,0.06) 100%)",
+              position: "relative",
             }}
           >
+            <PitchGraphic />
+            <div className="relative">
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {teamA && <UploadedImage src={teamA.logo_url} name={teamA.name} size={24} shape="square" />}
                 <span
                   className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-widest"
                   style={{
-                    backgroundColor: match?.status === "completed" ? "var(--color-win-dim)" : "rgba(193,39,45,0.15)",
+                    backgroundColor: match?.status === "completed" ? "var(--color-win-dim)" : "rgba(224,49,58,0.15)",
                     color: match?.status === "completed" ? "var(--color-win)" : "var(--color-crimson)",
                   }}
                 >
@@ -197,6 +201,7 @@ export function LiveMatch() {
                 <MomentumChart points={momentum} />
               </div>
             )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

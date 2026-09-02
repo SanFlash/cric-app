@@ -99,7 +99,7 @@ export function Predictions() {
       )}
 
       {selected && (
-        <div className="rounded-xl border p-6" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}>
+        <div className="rounded-xl border p-6" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}>
           {noPrediction && (
             <div className="flex flex-col items-start gap-3">
               <p className="text-sm" style={{ color: "var(--color-cream-faint)" }}>

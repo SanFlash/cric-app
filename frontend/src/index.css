@@ -2,28 +2,28 @@
 @import "tailwindcss";
 
 @theme {
-  /* --- Night-pitch palette --- */
-  --color-pitch-950: #0a1210;
-  --color-pitch-900: #0e1512;
-  --color-pitch-800: #131c18;
-  --color-pitch-700: #1a251f;
-  --color-pitch-600: #24332b;
-  --color-pitch-500: #35493d;
-  --color-pitch-line: #2a3830;
+  /* --- Stadium Navy palette (was "Night Pitch" green+amber) --- */
+  --color-pitch-950: #080b16;
+  --color-pitch-900: #0c1020;
+  --color-pitch-800: #10152a;
+  --color-pitch-700: #161d3a;
+  --color-pitch-600: #1e2850;
+  --color-pitch-500: #2c3a70;
+  --color-pitch-line: #232d55;
 
-  --color-cream: #edeae2;
-  --color-cream-dim: #a7b0a9;
-  --color-cream-faint: #6d7770;
+  --color-cream: #e7eaf2;
+  --color-cream-dim: #9aa2ba;
+  --color-cream-faint: #656d8a;
 
-  --color-amber: #f2a93b;
-  --color-amber-dim: #c2842a;
-  --color-amber-glow: rgba(242, 169, 59, 0.35);
+  --color-amber: #22d3ee;
+  --color-amber-dim: #0e93ad;
+  --color-amber-glow: rgba(34, 211, 238, 0.35);
 
-  --color-crimson: #c1272d;
-  --color-crimson-dim: #8f1d22;
+  --color-crimson: #e0313a;
+  --color-crimson-dim: #a32229;
 
-  --color-win: #4c9a5b;
-  --color-win-dim: #366b41;
+  --color-win: #34c471;
+  --color-win-dim: #248a4f;
 
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -37,8 +37,8 @@ html, body, #root {
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 600px at 15% -10%, rgba(242, 169, 59, 0.06), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(76, 154, 91, 0.05), transparent 55%),
+    radial-gradient(1200px 600px at 15% -10%, rgba(34, 211, 238, 0.07), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(44, 58, 112, 0.15), transparent 55%),
     var(--color-pitch-950);
   color: var(--color-cream);
   font-family: var(--font-body);
@@ -54,8 +54,8 @@ body {
 .turf-texture {
   background-image: repeating-linear-gradient(
     100deg,
-    rgba(237, 234, 226, 0.015) 0px,
-    rgba(237, 234, 226, 0.015) 1px,
+    rgba(231, 234, 242, 0.015) 0px,
+    rgba(231, 234, 242, 0.015) 1px,
     transparent 1px,
     transparent 64px
   );

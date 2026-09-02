@@ -44,7 +44,7 @@ export function Dashboard() {
       {error && (
         <div
           className="mb-6 rounded-lg border px-4 py-3 text-sm"
-          style={{ borderColor: "var(--color-crimson-dim)", backgroundColor: "rgba(193, 39, 45, 0.08)", color: "var(--color-cream-dim)" }}
+          style={{ borderColor: "var(--color-crimson-dim)", backgroundColor: "rgba(224, 49, 58, 0.08)", color: "var(--color-cream-dim)" }}
         >
           {error} Seed some data via the API and refresh — this dashboard reads live, nothing here is mocked.
         </div>
@@ -74,7 +74,7 @@ export function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               className="rounded-lg border px-4 py-3"
-              style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19, 28, 24, 0.5)" }}
+              style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16, 21, 42, 0.5)" }}
             >
               <div className="flex items-center gap-2">
                 <UploadedImage src={t.logo_url} name={t.name} size={28} shape="square" />
@@ -113,7 +113,7 @@ function LeaderboardPanel({
 }) {
   const color = accent === "amber" ? "var(--color-amber)" : "var(--color-crimson)";
   return (
-    <div className="rounded-lg border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19, 28, 24, 0.5)" }}>
+    <div className="rounded-lg border p-5" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16, 21, 42, 0.5)" }}>
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-widest" style={{ color: "var(--color-cream-faint)" }}>
         {title}
       </h2>

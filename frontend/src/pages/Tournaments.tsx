@@ -120,7 +120,7 @@ export function Tournaments() {
             <span>Swipe table for NRR &amp; points</span>
             <span style={{ color: "var(--color-amber)" }}>→</span>
           </div>
-          <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}>
+          <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}>
             <div style={{ minWidth: 560 }}>
               <div
                 className="grid grid-cols-12 gap-2 border-b px-5 py-3 text-xs uppercase tracking-widest"

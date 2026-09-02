@@ -106,7 +106,7 @@ export function Teams() {
               <Link
                 to={`/teams/${t.id}`}
                 className="block rounded-xl border p-5 transition-colors hover:border-[var(--color-amber-dim)]"
-                style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.5)" }}
+                style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.5)" }}
               >
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -125,7 +125,7 @@ export function Teams() {
                   {avgRating > 0 && (
                     <div
                       className="rounded-md px-2 py-1 font-mono text-sm font-bold"
-                      style={{ backgroundColor: "rgba(242,169,59,0.12)", color: "var(--color-amber)", fontFamily: "var(--font-mono)" }}
+                      style={{ backgroundColor: "rgba(34,211,238,0.12)", color: "var(--color-amber)", fontFamily: "var(--font-mono)" }}
                     >
                       {avgRating.toFixed(0)}
                     </div>

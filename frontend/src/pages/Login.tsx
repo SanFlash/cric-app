@@ -39,7 +39,7 @@ export function Login() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm rounded-xl border p-8"
-        style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(19,28,24,0.7)" }}
+        style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "rgba(16,21,42,0.7)" }}
       >
         <div className="mb-6 flex items-center gap-2">
           <div

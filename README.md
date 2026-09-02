@@ -1004,6 +1004,93 @@ something else entirely, and would need more specifics to track down
 two sessions? are "this device" and "the other device" hitting the same
 backend, or two separate local instances?).
 
+## Changed: full color palette — "Night Pitch" green+amber → "Stadium Navy" navy+cyan
+
+A genuine visual palette change, not a tweak, applied consistently across
+every page and both web and mobile — since the whole app is built on a
+small set of central CSS custom properties (`index.css`'s `@theme`
+block), changing what those tokens point to changes the entire app at
+once. Kept every token *name* the same (`--color-amber`, `--color-pitch-950`,
+etc.) so no component code needed touching — only the underlying hex
+values changed. Deep navy-indigo background (was near-black green),
+vivid cyan accent (was amber) for scores/primary actions/links, with
+wicket-red and win-green refreshed to be more vivid against the new
+navy rather than replaced — those two are near-universal sports-UI
+semantics worth keeping recognizable even in an otherwise different
+palette.
+
+**A real gap the token system alone didn't cover, found and fixed**:
+~40 places across components used hardcoded `rgba(r,g,b,...)` literals
+— translucent card backgrounds, glow effects — instead of referencing
+the CSS variables. These wouldn't have updated from the token change
+alone, silently leaving old green/amber tints scattered through an
+otherwise-navy-and-cyan app. Found via a project-wide grep for hardcoded
+RGB triplets, then systematically mapped each old literal to its new
+palette equivalent (verified counts matched exactly before/after the
+sweep — nothing missed, nothing double-replaced) rather than leaving
+some spots on the old palette.
+
+**Verified visually, not just "should work,"** across both surfaces
+this was explicitly asked for: five desktop screenshots (login,
+dashboard, live match with the pitch graphic, player detail) and three
+mobile screenshots (390px width — teams list, the Scorer's densest
+screen, the hamburger drawer) all confirm the new palette renders
+correctly and consistently, zero console errors, zero mobile overflow.
+
+## Fixed: hardcoded 10-wicket limit broke small-squad matches; added pitch-graphic visual polish
+
+Two requests bundled together: a broad "fix edge cases" ask (scoped down
+to the highest-value real bug found, not an exhaustive sweep — see the
+honest limitations note at the end) and a broad "make it more
+professional visually" ask (scoped down to one well-executed piece, not
+a full redesign).
+
+### The real bug: `max_wickets` was hardcoded to 10 everywhere
+
+A team with fewer than 11 registered players — routine for the casual/
+corporate cricket this app exists for — could never legally end an
+innings via wickets at all. It would just keep playing out every
+remaining over even after literally every available batter was out,
+since a wicket count of 10 is mathematically impossible with, say, 6
+players. Fixed: `_max_wickets_for()` now computes the real limit from
+the batting team's actual available players (respecting squad-scoping
+when the match has one linked, same precedence the roster endpoint
+already uses), floored at 1 and capped at the standard 10 so a large
+reserve squad doesn't inflate it past the real cricket maximum. This
+also closes out the previously-deferred "single player remaining" rule
+as a proper correctness fix rather than a bolt-on feature.
+
+**Verified precisely**: a 4-player team's innings correctly auto-
+completed at exactly the 3rd wicket (not chasing an impossible 10th). A
+15-player squad correctly capped at the standard 10, not 14 — an
+over-eager first version of this fix got that wrong (used `available - 1`
+with no cap), caught and corrected before calling it done. Also
+spot-checked a genuinely tied match while in there (already correctly
+handled: `winner_team_id: null`, `"Match tied"`).
+
+### Visual polish: a cricket pitch graphic, not a full redesign
+
+New `PitchGraphic` component — a subtle top-down 22-yard pitch (strip,
+popping creases, stumps at both ends, a hint of the field boundary) as a
+low-opacity SVG background texture, applied to the two most-viewed
+surfaces: the Scorer's sticky scoreboard and the Live Match Center card,
+both now with a richer amber-tinted gradient too. Verified visually at
+both desktop and mobile widths — subtle enough not to compete with the
+actual score, present enough to read as unmistakably cricket rather than
+a generic sports dashboard. Caught and fixed a real JSX structural bug
+(a stray leftover closing tag from restructuring the card markup) that
+would have broken the build if shipped without checking.
+
+### Honest scope limits on both fronts
+
+"Fix all possible scenarios" isn't something any single round can
+actually complete — this covers the highest-value bug found, not an
+exhaustive sweep. Known, real gaps not touched here: free hits after a
+no-ball aren't implemented at all. "Make the UI more professional" at
+full scope would mean touching every page, not two; this is one
+genuinely finished piece rather than a half-finished pass across the
+whole app.
+
 ## Fixed: 2nd innings genuinely couldn't be scored — the actual root cause
 
 Reported directly: after innings 1 finished, no scoring buttons appeared
