@@ -43,7 +43,7 @@ function Btn({ children, onClick, disabled, color = "var(--color-pitch-700)", te
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded-lg py-2 text-center text-sm font-bold transition-transform active:scale-95 disabled:opacity-30 sm:py-3 sm:text-lg"
+      className="rounded-lg py-1.5 text-center text-xs font-bold transition-transform active:scale-95 disabled:opacity-30 sm:py-3 sm:text-lg"
       style={{ backgroundColor: color, color: textColor, fontFamily: "var(--font-mono)" }}
     >
       {children}
@@ -378,7 +378,6 @@ export function Scorer() {
             style={{
               borderColor: "var(--color-amber-dim)",
               background: "linear-gradient(160deg, var(--color-pitch-950) 0%, var(--color-pitch-900) 60%, rgba(34,211,238,0.05) 100%)",
-              position: "relative",
             }}
           >
             <PitchGraphic />
@@ -483,7 +482,7 @@ export function Scorer() {
           <button
             onClick={() => setShowWicket(true)}
             disabled={scoring || blocked}
-            className="w-full rounded-lg py-2 text-center text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-30 sm:py-3 sm:text-lg"
+            className="w-full rounded-lg py-1.5 text-center text-xs font-bold transition-opacity hover:opacity-90 disabled:opacity-30 sm:py-3 sm:text-lg"
             style={{ backgroundColor: "var(--color-crimson)", color: "white", fontFamily: "var(--font-mono)" }}
           >
             WICKET

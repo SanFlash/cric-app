@@ -30,6 +30,51 @@ const ROLE_LABELS: Record<string, string> = {
   viewer: "Viewer",
 };
 
+// Fixed bottom bar, mobile-only — the 3 most reached-for destinations,
+// not a replacement for the hamburger drawer (which still has everything
+// else). Role-aware: a spectator (Player role) can't use Teams per the
+// existing nav restriction elsewhere in this file, so Live Match takes
+// its place there instead of showing a shortcut to a page they can't
+// meaningfully use.
+function BottomNav() {
+  const { isSpectatorOnly } = useAuth();
+  const items = isSpectatorOnly
+    ? [
+        { to: "/", label: "Dashboard", icon: "◆" },
+        { to: "/live", label: "Live Match", icon: "●" },
+        { to: "/players", label: "Players", icon: "♦" },
+      ]
+    : [
+        { to: "/", label: "Dashboard", icon: "◆" },
+        { to: "/players", label: "Players", icon: "♦" },
+        { to: "/teams", label: "Teams", icon: "■" },
+      ];
+
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t md:hidden"
+      style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-950)" }}
+    >
+      {items.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          end={item.to === "/"}
+          className={({ isActive }) =>
+            `flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium ${isActive ? "" : ""}`
+          }
+          style={({ isActive }) => ({
+            color: isActive ? "var(--color-amber)" : "var(--color-cream-faint)",
+          })}
+        >
+          <span className="text-base leading-none">{item.icon}</span>
+          {item.label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user, loading, logout, isSpectatorOnly } = useAuth();
   const visibleNavItems = isSpectatorOnly ? NAV_ITEMS.filter((i) => SPECTATOR_NAV_PATHS.has(i.to)) : NAV_ITEMS;
@@ -186,7 +231,7 @@ export function Layout() {
         <SidebarContent />
       </aside>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -196,6 +241,8 @@ export function Layout() {
           <Outlet />
         </motion.div>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

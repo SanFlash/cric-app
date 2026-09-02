@@ -1004,6 +1004,55 @@ something else entirely, and would need more specifics to track down
 two sessions? are "this device" and "the other device" hitting the same
 backend, or two separate local instances?).
 
+## Fixed: a real CSS layout bug (with an exact root cause), plus a mobile bottom nav
+
+User-reported, with a screenshot: on the Scorer page, the "Striker" label
+and its "Retired hurt / sub" link were missing from where they should
+be, instead appearing to float inside the scoreboard card near the
+ball-by-ball history dots.
+
+**Root cause, found precisely via computed CSS and bounding-box
+inspection, not guessed from the screenshot alone**: the scoreboard
+card had both a Tailwind `sticky` class and an inline
+`style={{position: "relative"}}` (added in an earlier round for the
+pitch-graphic background). Inline styles always win over classes, so
+the card was silently rendering as `position: relative` — but a
+*separate* `top-[52px]` utility class (only meaningful for `sticky`)
+kept applying anyway, since the inline style never touched `top`. That
+combination shifts an element visually without reserving space for it
+in the layout, which is exactly why the next row (Striker) rendered
+underneath the card's bottom edge instead of below it. This also meant
+the scoreboard's sticky-while-scrolling behavior (verified working in
+an earlier round) had been silently broken since the pitch-graphic
+round, without being re-tested after that change.
+
+**Fix**: removed the redundant inline `position: relative` — `sticky`
+already establishes a valid positioning context for the pitch graphic's
+absolutely-positioned SVG, so the inline override was never actually
+needed. **Verified with exact numbers, not just a visual check**:
+before the fix, the Striker label's bounding box (y: 486–502) sat
+*inside* the scoreboard card's own box (y: 380–510) — genuine overlap.
+After: the card ends at y=458, the label starts at y=486 — a clean
+28px gap matching the intended margin. Confirmed with a fresh
+screenshot too: "Striker" now shows correctly, aligned exactly like
+"Non-striker" and "Bowler".
+
+**Mobile bottom navigation bar** — fixed to the bottom of the screen on
+mobile only, 3 shortcuts (Dashboard / Players / Teams) alongside the
+existing hamburger drawer for everything else. Role-aware: the
+read-only Player (spectator) account gets Live Match in place of Teams,
+matching the nav-restriction already in place elsewhere for that role
+rather than offering a shortcut to a page it can't meaningfully use.
+Added bottom padding to the main content area so the new fixed bar
+doesn't cover page content — verified precisely by scrolling to the
+actual bottom of the Scorer page and checking bounding boxes: the
+WICKET button's bottom edge (y=756) sits a clean 38px above the bottom
+nav's top edge (y=794), not hidden underneath it.
+
+**Scoring buttons made smaller on mobile**, as requested — tighter
+vertical padding and smaller text specifically below the `sm:` Tailwind
+breakpoint, unchanged on desktop.
+
 ## Added: a real match selector on Live Match Center
 
 Replaced a raw "type a numeric match ID" text input with an actual
