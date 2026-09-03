@@ -869,6 +869,116 @@ is still in the repo and still works — swap `env: python` +
 this project; native Python is simpler to reason about and was requested
 specifically, so it's the default in the committed `render.yaml`.
 
+## Deploying the frontend to Vercel (backend stays on Render)
+
+**Read this section before deploying** — it explains a real
+architectural reason the *backend* isn't a good fit for Vercel with this
+project's current code, not just "here's how to click through it."
+
+### Why frontend-on-Vercel, backend-on-Render — not both on Vercel
+
+Vercel added native WebSocket support for Python/FastAPI functions in
+2026 (it didn't always have this). But there's a specific gap in *this*
+codebase, not a generic Vercel limitation: `app/ws/live_match.py`'s
+`ConnectionManager` tracks who's watching each match in a plain
+in-process Python dictionary —
+
+```python
+class ConnectionManager:
+    def __init__(self):
+        self.rooms: dict[int, list[WebSocket]] = {}
+```
+
+On Render, there's exactly one long-running process, so this correctly
+holds every connection for every match — this is exactly what's been
+verified working throughout this project's whole WebSocket testing
+history. Vercel's own docs are explicit that this doesn't hold for
+serverless functions: *"Established connections are pinned to the
+Function for its maximum duration. Future connections are not
+guaranteed to connect to the same Function."* If a delivery gets scored
+via a REST request handled by one function instance, and a viewer's
+WebSocket is pinned to a *different* instance, that viewer's live
+update wouldn't arrive — each instance has its own separate memory, so
+`self.rooms` wouldn't be shared between them. Vercel's own
+recommendation for exactly this situation is to move shared connection
+state into Redis; this project doesn't do that today, so deploying the
+backend to Vercel as-is would mean live scoring becomes unreliable in a
+way that's hard to notice in casual testing (single viewer, single
+function instance) and easy to hit in real use (multiple people
+watching a match at once).
+
+The frontend has no such issue — it's a static Vite build, exactly what
+Vercel is built for, and it already supports pointing at a separately-
+hosted backend via the `VITE_API_URL` mechanism (verified for real
+cross-origin deployment earlier in this project). So: frontend on
+Vercel, backend stays on Render.
+
+### Steps
+
+1. **Deploy the backend to Render first**, if you haven't already — see
+   "Deploying to Render" above. You need its live URL for step 5.
+2. Push your latest code to GitHub (`git add`, `git commit`, `git push`
+   — same as the earlier Render steps).
+3. **Vercel Dashboard → Add New → Project.** Connect your GitHub account
+   if you haven't, then select the `SanFlash/cric-app` repo (or your
+   fork's name).
+4. Vercel shows a configuration screen before deploying. Set these
+   exactly — this repo has both `backend/` and `frontend/` at the root,
+   so Vercel needs to be told which one is the actual site:
+   | Field | Value |
+   |---|---|
+   | Framework Preset | Vite (should auto-detect once Root Directory is set) |
+   | Root Directory | `frontend` |
+   | Build Command | `npm run build` (Vite default — leave as detected) |
+   | Output Directory | `dist` (Vite default — leave as detected) |
+5. Before clicking Deploy, add an environment variable:
+   | Key | Value |
+   |---|---|
+   | `VITE_API_URL` | your Render backend's URL from step 1, e.g. `https://corpcric-api.onrender.com` (no trailing slash) |
+6. Click **Deploy**. Vercel builds and gives you a live URL (something
+   like `https://cric-app.vercel.app`) once it finishes.
+7. **`vercel.json` is already committed** in `frontend/vercel.json` —
+   this is required, not optional, for a React Router SPA: without it,
+   directly loading `/login` or `/teams/5` (not navigating there by
+   clicking inside the app) 404s, because Vercel's static server looks
+   for a literal file at that path instead of serving `index.html` and
+   letting React Router take over. Confirmed this exact failure mode
+   locally before writing this (same root cause as the equivalent
+   Render Static Site rewrite rule documented above) — if you ever
+   remove or rename this file, that bug comes back.
+8. **Go back to the Render backend and add your new Vercel URL to
+   CORS.** Render dashboard → `corpcric-api` service → Environment →
+   `CORS_ORIGINS` = `["https://cric-app.vercel.app"]` (your actual
+   Vercel URL, as a JSON array string — confirmed locally that this
+   exact format is what `Settings.CORS_ORIGINS` expects). Save — this
+   redeploys the backend automatically.
+9. Visit your Vercel URL, log in with the seeded admin credentials.
+   If you see a CORS error in the browser console, step 8's URL doesn't
+   match exactly (check for a trailing slash mismatch) or hasn't
+   finished redeploying yet.
+
+### If you change `VITE_API_URL` later
+
+Vite bakes environment variables into the JS bundle at *build* time, not
+runtime — the same rule that already applies to the Render Static Site
+deployment above. Changing the variable's value in Vercel's dashboard
+alone does nothing until you trigger a new build: **Vercel → your
+project → Deployments → ⋯ on the latest one → Redeploy**.
+
+### If you want to try the backend on Vercel anyway
+
+It's not blocked — Vercel's Python runtime genuinely can run this FastAPI
+app. But per the explanation above, live-scoring broadcast reliability
+across multiple simultaneous viewers isn't guaranteed with the current
+in-memory `ConnectionManager` under Vercel's serverless model. Making it
+reliable would mean replacing `self.rooms` with a Redis-backed pub/sub
+(publish deliveries to a channel, have every function instance subscribe
+rather than hold local state) — a real, separate piece of work, not
+implemented in this project. Everything else (REST endpoints, auth, the
+scoring logic itself) would work fine on Vercel's Python runtime; it's
+specifically the live-broadcast fan-out that needs the architecture
+change first.
+
 ## Added: team/player edit & remove, a read-only player login, and real mobile bug fixes
 
 - **Team edit/delete** — "Edit Team" (name, coach, logo — reuses the
