@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { endpoints, type TeamOut, type PlayerOut } from "../api/client";
 import { Modal } from "../components/Modal";
@@ -13,30 +13,45 @@ interface TeamWithRoster extends TeamOut {
 
 export function Teams() {
   const { user, canManageTeams } = useAuth();
+  const navigate = useNavigate();
   const [teams, setTeams] = useState<TeamWithRoster[]>([]);
+  const [allPlayers, setAllPlayers] = useState<PlayerOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewTeam, setShowNewTeam] = useState(false);
   const [newName, setNewName] = useState("");
   const [newCoach, setNewCoach] = useState("");
   const [newLogo, setNewLogo] = useState<string | null>(null);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<number>>(new Set());
+  const [playerSearch, setPlayerSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   function loadTeams() {
     setLoading(true);
-    endpoints.teams().then(async (r) => {
-      const withRosters = await Promise.all(
-        r.data.map(async (t) => {
-          const players = await endpoints.players(t.id).then((res) => res.data).catch(() => []);
-          return { ...t, players };
-        })
-      );
-      setTeams(withRosters);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    Promise.all([
+      endpoints.teams().then(async (r) => {
+        const withRosters = await Promise.all(
+          r.data.map(async (t) => {
+            const players = await endpoints.players(t.id).then((res) => res.data).catch(() => []);
+            return { ...t, players };
+          })
+        );
+        setTeams(withRosters);
+      }),
+      endpoints.players().then((r) => setAllPlayers(r.data)),
+    ]).finally(() => setLoading(false));
   }
 
   useEffect(loadTeams, []);
+
+  function togglePlayer(id: number) {
+    setSelectedPlayerIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   async function handleCreateTeam() {
     setFormError(null);
@@ -51,12 +66,26 @@ export function Teams() {
         setSaving(false);
         return;
       }
-      await endpoints.createTeam({ company_id: user.company_id, name: newName, coach_name: newCoach || undefined, logo_url: newLogo ?? undefined });
+      const res = await endpoints.createTeam({ company_id: user.company_id, name: newName, coach_name: newCoach || undefined, logo_url: newLogo ?? undefined });
+      const newTeamId = res.data.id;
+
+      // Assign whichever existing players were selected — reuses the
+      // same transfer endpoint TeamDetail's roster management already
+      // relies on, one call per player (no bulk-assign endpoint exists,
+      // and this list is realistically small enough that it doesn't need one).
+      for (const playerId of selectedPlayerIds) {
+        await endpoints.transferPlayer(playerId, newTeamId);
+      }
+
       setShowNewTeam(false);
       setNewName("");
       setNewCoach("");
       setNewLogo(null);
-      loadTeams();
+      setSelectedPlayerIds(new Set());
+      setPlayerSearch("");
+      // Land on the new team's page — where its rating and win prediction
+      // (from whichever players were just assigned) are shown.
+      navigate(`/teams/${newTeamId}`);
     } catch (e: unknown) {
       const message =
         e && typeof e === "object" && "response" in e
@@ -167,6 +196,45 @@ export function Teams() {
               className="w-full rounded-md border px-3 py-2 text-sm outline-none"
               style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-800)", color: "var(--color-cream)" }}
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs" style={{ color: "var(--color-cream-faint)" }}>
+              Add existing players (optional) — {selectedPlayerIds.size} selected
+            </label>
+            <input
+              value={playerSearch}
+              onChange={(e) => setPlayerSearch(e.target.value)}
+              placeholder="Search players…"
+              className="mb-2 w-full rounded-md border px-3 py-1.5 text-sm outline-none"
+              style={{ borderColor: "var(--color-pitch-line)", backgroundColor: "var(--color-pitch-800)", color: "var(--color-cream)" }}
+            />
+            <div
+              className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-md border p-2"
+              style={{ borderColor: "var(--color-pitch-line)" }}
+            >
+              {allPlayers
+                .filter((p) => p.full_name.toLowerCase().includes(playerSearch.toLowerCase()))
+                .map((p) => (
+                  <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-sm hover:bg-white/5">
+                    <input
+                      type="checkbox"
+                      checked={selectedPlayerIds.has(p.id)}
+                      onChange={() => togglePlayer(p.id)}
+                    />
+                    <UploadedImage src={p.profile_image_url} name={p.full_name} size={20} shape="circle" />
+                    <span style={{ color: "var(--color-cream)" }}>{p.full_name}</span>
+                    <span className="ml-auto text-[10px]" style={{ color: "var(--color-cream-faint)" }}>
+                      {p.team_id ? "on a team" : "free agent"}
+                    </span>
+                  </label>
+                ))}
+              {allPlayers.length === 0 && (
+                <div className="px-1.5 py-1 text-xs" style={{ color: "var(--color-cream-faint)" }}>No players exist yet.</div>
+              )}
+            </div>
+            <div className="mt-1 text-[10px]" style={{ color: "var(--color-cream-faint)" }}>
+              Selecting a player already on another team moves them here — same as Edit → Transfer elsewhere.
+            </div>
           </div>
           {formError && <div className="text-xs" style={{ color: "var(--color-crimson)" }}>{formError}</div>}
           <button

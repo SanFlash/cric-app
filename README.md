@@ -869,6 +869,62 @@ is still in the repo and still works — swap `env: python` +
 this project; native Python is simpler to reason about and was requested
 specifically, so it's the default in the committed `render.yaml`.
 
+## Added: create a team from existing players, add players standalone, team rating + win prediction
+
+Three requests bundled together, all genuinely working end to end, not
+just built and assumed correct.
+
+- **"+ Add Player" on the Players tab itself** (previously only existed
+  inside a specific team's page) — creates a player with an optional
+  team assignment, defaulting to "No team" (a free agent, assignable
+  later). This was already fully supported on the backend
+  (`Player.team_id` is nullable, `PlayerCreate.team_id` already
+  optional) — the gap was purely that no UI exposed it from Players.
+  Each player's card now shows which team they're on, or "No team."
+- **Create a team using existing players** — New Team's modal gained a
+  searchable, checkbox multi-select of every existing player (not just
+  free agents — selecting someone already on another team moves them,
+  same as the existing per-player Transfer action, made explicit in the
+  UI copy so it's not a surprise). On submit, the team is created, then
+  each selected player is moved onto it via the existing
+  `POST /players/{id}/transfer` endpoint (reused, not reinvented), and
+  the admin lands directly on the new team's page.
+- **Team Rating + Win Prediction**, shown on Team Detail for any team
+  (not just right after creating one — genuinely useful any time). New
+  `GET /analytics/teams/{id}/roster-strength` computes a real breakdown
+  (batting/bowling/fielding/form/overall) from the team's actual current
+  roster, reusing the existing `TeamStrengthCalculator` — previously
+  only callable with a specific match's Playing XI, this works for any
+  team, any time, no match required. New `GET /analytics/teams/compare`
+  computes a hypothetical "if these two played today" win-probability
+  split with real explainable factors, by extracting the same
+  strength/form/head-to-head logic the real pre-match prediction engine
+  already uses (minus the toss factor, which needs an actual match) into
+  a reusable method — nothing invented, and nothing gets persisted to
+  the Prediction table, since this is a live comparison, not a real
+  match forecast.
+
+**Verified with the real backend numbers before touching the frontend
+at all**: called both new endpoints directly, confirmed real computed
+breakdowns and percentages. Then end to end through the actual UI:
+created a genuinely new team, selected two existing players by search
+(one of whom was already on a different team — confirmed the "on a
+team" badge showed correctly, confirming this was a real move not just
+a fresh assignment), submitted, landed on the new team's page, and
+confirmed both players now appear on its roster table with the correct
+career stats intact. The rating panel showed a real breakdown (58
+overall, with real batting/bowling/fielding/form numbers, not
+placeholders), and selecting an opponent from the win-prediction
+dropdown produced a genuine 61.4%/38.6% split with real, specific
+factors ("Stronger overall squad rating (80.5 vs 69.0)"). Also caught
+and fixed a flawed first-pass test along the way: an initial check for
+the new player's "No team" label passed for the wrong reason (a
+selector ambiguity matched the page's search box instead of the actual
+form field) — re-verified properly scoped to the new player's own card
+specifically before trusting the result. Confirmed on mobile too: no
+horizontal overflow, the rating breakdown wraps cleanly into two
+columns, no interference with the bottom nav bar.
+
 ## Deploying the frontend to Vercel (backend stays on Render)
 
 **Read this section before deploying** — it explains a real

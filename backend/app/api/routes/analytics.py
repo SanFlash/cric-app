@@ -115,6 +115,51 @@ def get_team_strength(team_id: int, match_id: int, db: Session = Depends(get_db)
     return TeamStrengthOut(team_id=team_id, **breakdown.__dict__)
 
 
+@router.get("/teams/{team_id}/roster-strength", response_model=TeamStrengthOut)
+def get_team_roster_strength(team_id: int, db: Session = Depends(get_db)):
+    """
+    Team strength computed from the team's whole current roster — no
+    match or Playing XI required, unlike /teams/{id}/strength above.
+    Meant for "how strong is this team right now" outside match context:
+    right after creating a team and assigning players, or any time on
+    Team Detail. Genuinely live — reads whichever players currently
+    have team_id set to this team, so it updates as the roster changes.
+    """
+    players = db.query(Player).filter(Player.team_id == team_id, Player.is_deleted.is_(False)).all()
+    if not players:
+        raise HTTPException(status_code=404, detail="This team has no players yet")
+    breakdown = TeamStrengthCalculator(db).compute(team_id, [p.id for p in players])
+    return TeamStrengthOut(team_id=team_id, **breakdown.__dict__)
+
+
+class TeamCompareOut(BaseModel):
+    team_a_id: int
+    team_b_id: int
+    team_a_win_pct: float
+    team_b_win_pct: float
+    factors: dict
+
+
+@router.get("/teams/compare", response_model=TeamCompareOut)
+def compare_teams(team_a_id: int, team_b_id: int, db: Session = Depends(get_db)):
+    """
+    A hypothetical "if these two played today" win-probability split —
+    same underlying model as a real pre-match prediction, minus the toss
+    factor, and nothing gets persisted. Works for any two teams, doesn't
+    require a scheduled match between them — built so a newly-created
+    team can show a meaningful win prediction against an existing team
+    immediately, without needing to actually schedule a match first.
+    """
+    if team_a_id == team_b_id:
+        raise HTTPException(status_code=400, detail="Pick two different teams to compare")
+    result = PredictionEngine(db).compare_teams(team_a_id, team_b_id)
+    return TeamCompareOut(
+        team_a_id=team_a_id, team_b_id=team_b_id,
+        team_a_win_pct=result.team_a_win_pct, team_b_win_pct=result.team_b_win_pct,
+        factors=result.factors_payload(),
+    )
+
+
 class PredictionOut(BaseModel):
     match_id: int
     team_a_win_pct: float

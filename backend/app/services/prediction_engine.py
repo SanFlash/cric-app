@@ -218,3 +218,53 @@ class PredictionEngine:
             .order_by(Prediction.computed_at.asc())
             .all()
         )
+
+    def compare_teams(self, team_a_id: int, team_b_id: int) -> PredictionResult:
+        """
+        A hypothetical "if these two played today" comparison — same
+        strength/form/head-to-head logic as compute_pre_match, minus the
+        toss factor (there's no real match, so no toss to have happened).
+        Doesn't touch the Prediction table at all: nothing is persisted,
+        this is a live read-only comparison, callable for any two teams
+        regardless of whether a match between them is scheduled. Built
+        for showing a new team's roster strength against an existing
+        team right after creating it, but works for any pair.
+        """
+        strength_a, strength_b = self._team_strength(team_a_id), self._team_strength(team_b_id)
+        form_a, form_b = self._team_form(team_a_id), self._team_form(team_b_id)
+        h2h_a_pct, h2h_sample = self._head_to_head(team_a_id, team_b_id)
+
+        factors: list[Factor] = []
+        diff = 0.0
+
+        strength_delta = strength_a - strength_b
+        diff += strength_delta * 0.35
+        if abs(strength_delta) >= 2:
+            factors.append(Factor(
+                f"{'Stronger' if strength_delta > 0 else 'Weaker'} overall squad rating "
+                f"({strength_a} vs {strength_b})",
+                "favor_a" if strength_delta > 0 else "favor_b", abs(strength_delta) * 0.35,
+            ))
+
+        form_delta = form_a - form_b
+        diff += form_delta * 0.30
+        if abs(form_delta) >= 2:
+            factors.append(Factor(
+                f"{'Better' if form_delta > 0 else 'Worse'} recent batting/bowling form",
+                "favor_a" if form_delta > 0 else "favor_b", abs(form_delta) * 0.30,
+            ))
+
+        if h2h_a_pct is not None:
+            h2h_delta = h2h_a_pct - 50
+            diff += h2h_delta * 0.20
+            if abs(h2h_delta) >= 5:
+                factors.append(Factor(
+                    f"Historical head-to-head record ({h2h_sample} meetings, Team A won {h2h_a_pct}%)",
+                    "favor_a" if h2h_delta > 0 else "favor_b", abs(h2h_delta) * 0.20,
+                ))
+
+        team_a_pct = round(_clamp(50 + diff, 5, 95), 1)
+        return PredictionResult(
+            team_a_win_pct=team_a_pct, team_b_win_pct=round(100 - team_a_pct, 1),
+            context="hypothetical", factors=factors,
+        )

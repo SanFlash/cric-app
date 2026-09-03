@@ -130,6 +130,25 @@ export interface MatchSummaryOut {
   best_bowler: MatchAwardOut | null;
 }
 
+export interface TeamStrengthOut {
+  team_id: number;
+  batting_strength: number;
+  bowling_strength: number;
+  allround_strength: number;
+  fielding_strength: number;
+  recent_form_strength: number;
+  bench_strength: number;
+  overall_strength: number;
+}
+
+export interface TeamCompareOut {
+  team_a_id: number;
+  team_b_id: number;
+  team_a_win_pct: number;
+  team_b_win_pct: number;
+  factors: { items: { factor: string; direction: string; weight: number }[] };
+}
+
 export interface StandingOut {
   team_id: number;
   played: number;
@@ -253,6 +272,7 @@ export const endpoints = {
   player: (id: number) => api.get<PlayerOut>(`/players/${id}`),
   createPlayer: (payload: Record<string, unknown>) => api.post<PlayerOut>("/players", payload),
   updatePlayer: (id: number, payload: Record<string, unknown>) => api.patch<PlayerOut>(`/players/${id}`, payload),
+  transferPlayer: (id: number, newTeamId: number) => api.post<PlayerOut>(`/players/${id}/transfer`, null, { params: { new_team_id: newTeamId } }),
   deletePlayer: (id: number) => api.delete(`/players/${id}`),
   squads: (teamId?: number) => api.get<SquadOut[]>("/squads", { params: { team_id: teamId } }),
   createSquad: (payload: { team_id: number; name: string; tournament_id?: number }) =>
@@ -286,6 +306,9 @@ export const endpoints = {
   momentum: (matchId: number) => api.get<PredictionOut[]>(`/analytics/matches/${matchId}/predictions/momentum`),
   computePreMatchPrediction: (matchId: number) => api.post<PredictionOut>(`/analytics/matches/${matchId}/predictions/pre-match`),
   matchSummary: (matchId: number) => api.get<MatchSummaryOut | null>(`/analytics/matches/${matchId}/summary`),
+  rosterStrength: (teamId: number) => api.get<TeamStrengthOut>(`/analytics/teams/${teamId}/roster-strength`),
+  compareTeams: (teamAId: number, teamBId: number) =>
+    api.get<TeamCompareOut>("/analytics/teams/compare", { params: { team_a_id: teamAId, team_b_id: teamBId } }),
   standings: (tournamentId: number) => api.get<StandingOut[]>(`/tournaments/${tournamentId}/standings`),
   leaderboard: (metric: string, params?: Record<string, unknown>) =>
     api.get<LeaderboardEntryOut[]>(`/leaderboards/${metric}`, { params }),

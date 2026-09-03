@@ -5,6 +5,7 @@ import { endpoints, type TeamOut, type PlayerOut } from "../api/client";
 import { Modal } from "../components/Modal";
 import { ImageUpload } from "../components/ImageUpload";
 import { UploadedImage } from "../components/UploadedImage";
+import { TeamRatingPanel } from "../components/TeamRatingPanel";
 import { useAuth } from "../hooks/useAuth";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -28,6 +29,7 @@ export function TeamDetail() {
   const { canManageTeams } = useAuth();
   const [team, setTeam] = useState<TeamOut | null>(null);
   const [players, setPlayers] = useState<PlayerOut[]>([]);
+  const [allTeams, setAllTeams] = useState<TeamOut[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showAddPlayer, setShowAddPlayer] = useState(false);
@@ -67,10 +69,11 @@ export function TeamDetail() {
     if (!teamId) return;
     const id = Number(teamId);
     setLoading(true);
-    Promise.all([endpoints.team(id), endpoints.players(id)])
-      .then(([t, p]) => {
+    Promise.all([endpoints.team(id), endpoints.players(id), endpoints.teams()])
+      .then(([t, p, allT]) => {
         setTeam(t.data);
         setPlayers(p.data.sort((a, b) => b.current_rating - a.current_rating));
+        setAllTeams(allT.data);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -291,6 +294,8 @@ export function TeamDetail() {
           {deleteTeamError}
         </div>
       )}
+
+      {team && <TeamRatingPanel teamId={team.id} allTeams={allTeams} />}
 
       <div className="mb-1.5 flex items-center gap-1 text-[10px] md:hidden" style={{ color: "var(--color-cream-faint)" }}>
         <span>Swipe table for runs, wickets, form &amp; rating</span>
